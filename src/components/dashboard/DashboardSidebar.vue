@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="dashboard-sidebar z-40 bg-surface-container-low hidden md:flex flex-col p-6 bg-gradient-to-r from-transparent to-surface"
+    class="fixed left-0 top-0 z-40 hidden h-screen w-[288px] flex-shrink-0 flex-col overflow-hidden bg-surface-container-low bg-gradient-to-r from-transparent to-surface p-6 md:flex"
   >
     <!-- Brand Identity -->
     <div class="mb-10 px-4 flex-shrink-0">
@@ -35,7 +35,7 @@
     </nav>
 
     <!-- Bottom Actions (always pinned at bottom) -->
-    <div class="pt-6 flex flex-col gap-4 flex-shrink-0">
+    <div class="mt-auto flex flex-shrink-0 flex-col gap-4 pt-6">
       <button
         class="bg-primary text-white rounded-full py-3 px-6 text-sm font-bold shadow-angpao-lg hover:opacity-90 transition-opacity"
       >
@@ -75,17 +75,3 @@ function isActive(itemRoute: string): boolean {
   return route.path.startsWith(itemRoute);
 }
 </script>
-
-<style scoped>
-.dashboard-sidebar {
-  width: 288px;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* no scroll on sidebar itself */
-}
-</style>

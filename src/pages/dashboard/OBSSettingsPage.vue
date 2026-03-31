@@ -5,34 +5,34 @@
       search-placeholder="Search settings..."
     />
 
-    <div class="pt-4 px-6 pb-12 max-w-6xl mx-auto">
+    <div class="w-full pb-12 pt-4 px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div
-        class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+        class="mb-8 flex flex-col gap-4 lg:mb-10 md:flex-row md:items-end md:justify-between"
       >
-        <div>
+        <div class="min-w-0">
           <h1
-            class="text-4xl font-extrabold font-headline tracking-tight text-on-surface"
+            class="text-3xl font-extrabold font-headline tracking-tight text-on-surface sm:text-4xl"
           >
             OBS Overlay Settings
           </h1>
-          <p class="text-on-surface-variant mt-2 max-w-lg">
+          <p class="text-on-surface-variant mt-2 max-w-xl">
             Configure your donation alerts to match your stream's aesthetic.
             Changes are applied in real-time to your unique URL.
           </p>
         </div>
-        <div class="flex gap-3">
-          <AppButton variant="secondary" size="md" icon="refresh"
+        <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <AppButton class="w-full sm:w-auto" variant="secondary" size="md" icon="refresh"
             >Reset</AppButton
           >
-          <AppButton variant="brand" size="md">Save Changes</AppButton>
+          <AppButton class="w-full sm:w-auto" variant="brand" size="md">Save Changes</AppButton>
         </div>
       </div>
 
       <!-- Main Grid -->
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+      <div class="obs-layout-grid">
         <!-- Left Column: Controls -->
-        <div class="xl:col-span-5 flex flex-col gap-6">
+        <div class="min-w-0 flex flex-col gap-6">
           <!-- URL Generator -->
           <div
             class="bg-surface-container-lowest rounded-xl p-6 shadow-angpao relative overflow-hidden"
@@ -47,15 +47,15 @@
                 <span class="material-symbols-outlined text-primary">link</span
                 >OBS Widget URL
               </h3>
-              <div class="flex gap-2">
+              <div class="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   readonly
-                  class="flex-1 bg-surface-container-low border-none rounded-lg px-4 py-3 text-sm font-mono text-on-surface-variant focus:ring-2 focus:ring-secondary/10"
+                  class="h-11 flex-1 bg-surface-container-low border-none rounded-lg px-4 py-3 text-sm font-mono text-on-surface-variant focus:ring-2 focus:ring-secondary/10 min-w-0"
                   value="https://angpaoku.com/overlay/v1/u_4829375"
                 />
                 <button
-                  class="bg-primary-container text-on-primary-container px-4 py-3 rounded-lg flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
+                  class="h-11 bg-primary-container text-on-primary-container px-4 py-3 rounded-lg flex items-center justify-center hover:opacity-90 transition-all active:scale-95 sm:w-11 sm:px-0"
                 >
                   <span class="material-symbols-outlined">content_copy</span>
                 </button>
@@ -103,7 +103,7 @@
               <label class="block font-headline font-bold text-on-surface mb-4"
                 >Entry Animation</label
               >
-              <div class="grid grid-cols-3 gap-3">
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <button
                   v-for="anim in animations"
                   :key="anim.value"
@@ -184,20 +184,20 @@
         </div>
 
         <!-- Right Column: Preview -->
-        <div class="xl:col-span-7">
+        <div class="min-w-0">
           <div
-            class="sticky top-28 bg-surface-container-lowest rounded-2xl shadow-angpao-xl p-4 md:p-8 aspect-video flex flex-col overflow-hidden"
+            class="bg-surface-container-lowest rounded-2xl shadow-angpao-xl p-4 md:p-8 min-h-[340px] sm:min-h-[420px] xl:sticky xl:top-28 flex flex-col overflow-hidden"
           >
             <!-- Toolbar -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center gap-2">
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
                 <div class="flex gap-1.5">
                   <div class="w-3 h-3 rounded-full bg-error/20"></div>
                   <div class="w-3 h-3 rounded-full bg-tertiary/20"></div>
                   <div class="w-3 h-3 rounded-full bg-secondary/20"></div>
                 </div>
                 <span
-                  class="text-[10px] font-bold tracking-widest text-on-surface-variant/40 uppercase ml-2"
+                  class="text-[10px] font-bold tracking-widest text-on-surface-variant/40 uppercase ml-2 truncate"
                   >Live Canvas Preview</span
                 >
               </div>
@@ -223,29 +223,29 @@
                 class="absolute inset-0 flex items-center justify-center pointer-events-none"
               >
                 <div
-                  class="w-full max-w-sm bg-white/90 glass-effect rounded-2xl p-6 shadow-2xl translate-y-[-10%] border-l-8 border-primary flex items-center gap-6 animate-pulse"
+                  class="w-full max-w-md bg-white/90 glass-effect rounded-2xl p-4 sm:p-6 shadow-2xl translate-y-[-10%] border-l-8 border-primary flex items-center gap-3 sm:gap-6 animate-pulse"
                 >
                   <div
-                    class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center shrink-0"
+                    class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary-fixed flex items-center justify-center shrink-0"
                   >
                     <span
-                      class="material-symbols-outlined text-3xl text-primary"
+                      class="material-symbols-outlined text-2xl sm:text-3xl text-primary"
                       style="font-variation-settings: &quot;FILL&quot; 1"
                       >redeem</span
                     >
                   </div>
                   <div>
                     <p
-                      class="text-primary font-headline font-black text-xl tracking-tight leading-none"
+                      class="text-primary font-headline font-black text-lg sm:text-xl tracking-tight leading-none"
                     >
                       Angpao Received!
                     </p>
-                    <p class="text-on-surface-variant font-bold text-sm mt-1">
+                    <p class="text-on-surface-variant font-bold text-xs sm:text-sm mt-1">
                       CreatorFan99 sent
                       <span class="text-on-surface">IDR 50.000</span>
                     </p>
                     <p
-                      class="text-on-surface-variant text-[11px] italic mt-2 opacity-80 leading-snug"
+                      class="text-on-surface-variant text-[10px] sm:text-[11px] italic mt-2 opacity-80 leading-snug"
                     >
                       "Keep up the amazing content! Your streams help me unwind
                       after work."
@@ -255,7 +255,7 @@
               </div>
 
               <!-- Overlay Indicators -->
-              <div class="absolute bottom-4 left-4 flex gap-2">
+              <div class="absolute bottom-4 left-4 flex flex-wrap gap-2 pr-4">
                 <div
                   class="px-2 py-1 bg-black/50 text-[10px] text-white rounded font-mono"
                 >
@@ -274,7 +274,7 @@
 
             <!-- Gold Progress Bar -->
             <div class="mt-8">
-              <div class="flex justify-between items-end mb-2">
+              <div class="mb-2 flex flex-wrap items-end justify-between gap-2">
                 <p
                   class="text-xs font-headline font-bold uppercase tracking-wider text-on-surface-variant"
                 >
@@ -323,3 +323,17 @@ const animations = [
   { value: "fade_in", label: "Fade In", icon: "blur_on" },
 ];
 </script>
+
+<style scoped>
+.obs-layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 420px) {
+  .obs-layout-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

@@ -64,6 +64,174 @@
         </AppCard>
       </div>
 
+      <!-- Filters -->
+      <div
+        class="mb-6 flex flex-col gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4"
+      >
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div class="flex flex-wrap gap-3">
+            <div class="flex w-full flex-col gap-2 md:w-[260px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Search</span
+              >
+              <div class="relative">
+              <span
+                class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-on-surface-variant/60"
+                >search</span
+              >
+              <input
+                v-model="filters.search"
+                type="text"
+                placeholder="Search products..."
+                class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-2 md:w-[200px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Category</span
+              >
+              <div class="relative">
+              <select
+                v-model="filters.category"
+                :class="[
+                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
+                  filters.category !== 'All'
+                    ? 'border-primary/40 bg-primary/5'
+                    : 'border-outline-variant/20',
+                ]"
+              >
+                <option v-for="category in categories" :key="category">
+                  {{ category }}
+                </option>
+              </select>
+              <span
+                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
+                >expand_more</span
+              >
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-2 md:w-[180px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Status</span
+              >
+              <div class="relative">
+              <select
+                v-model="filters.status"
+                :class="[
+                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
+                  filters.status !== 'All'
+                    ? 'border-primary/40 bg-primary/5'
+                    : 'border-outline-variant/20',
+                ]"
+              >
+                <option v-for="status in statuses" :key="status">
+                  {{ status }}
+                </option>
+              </select>
+              <span
+                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
+                >expand_more</span
+              >
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-2 md:w-[170px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Price</span
+              >
+              <div class="relative">
+              <select
+                v-model="filters.price"
+                :class="[
+                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
+                  filters.price !== 'All'
+                    ? 'border-primary/40 bg-primary/5'
+                    : 'border-outline-variant/20',
+                ]"
+              >
+                <option v-for="price in prices" :key="price">
+                  {{ price }}
+                </option>
+              </select>
+              <span
+                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
+                >expand_more</span
+              >
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-2 md:w-[170px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Sales</span
+              >
+              <div class="relative">
+              <select
+                v-model="filters.sales"
+                :class="[
+                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
+                  filters.sales !== 'All'
+                    ? 'border-primary/40 bg-primary/5'
+                    : 'border-outline-variant/20',
+                ]"
+              >
+                <option v-for="sales in salesOptions" :key="sales">
+                  {{ sales }}
+                </option>
+              </select>
+              <span
+                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
+                >expand_more</span
+              >
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col gap-2 md:w-[200px]">
+              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Sort by</span
+              >
+              <div class="relative">
+              <select
+                v-model="filters.sort"
+                :class="[
+                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
+                  filters.sort !== 'Newest'
+                    ? 'border-primary/40 bg-primary/5'
+                    : 'border-outline-variant/20',
+                ]"
+              >
+                <option v-for="sortOption in sortOptions" :key="sortOption">
+                  {{ sortOption }}
+                </option>
+              </select>
+              <span
+                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
+                >expand_more</span
+              >
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 md:flex-nowrap">
+            <button
+              v-if="hasActiveFilters"
+              @click="resetFilters"
+              class="inline-flex h-11 items-center justify-center rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-semibold text-on-surface transition-colors hover:border-outline-variant/50 hover:bg-surface-container-low"
+            >
+              Reset Filters
+            </button>
+            <button
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-bold text-on-surface transition-colors hover:border-outline-variant/50 hover:bg-surface-container-low"
+            >
+              <span class="material-symbols-outlined text-lg">add</span>
+              Add Category
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Products Table -->
       <AppCard
         shadow="sm"
@@ -242,6 +410,57 @@ import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import AppButton from "@/components/common/AppButton.vue";
 import type { Product } from "@/types";
+import { computed, ref } from "vue";
+
+const categories = [
+  "All",
+  "Digital Art",
+  "Video Course",
+  "E-book",
+  "Templates",
+];
+
+const statuses = ["All", "Active", "Inactive", "Draft"];
+const prices = ["All", "$0 - $10", "$10 - $50", "$50+"];
+const salesOptions = ["All", "Top Selling", "Low Sales", "No Sales"];
+const sortOptions = [
+  "Newest",
+  "Oldest",
+  "Price: Low to High",
+  "Price: High to Low",
+  "Most Sales",
+];
+
+const filters = ref({
+  category: "All",
+  status: "All",
+  price: "All",
+  sales: "All",
+  sort: "Newest",
+  search: "",
+});
+
+const hasActiveFilters = computed(() => {
+  return (
+    filters.value.category !== "All" ||
+    filters.value.status !== "All" ||
+    filters.value.price !== "All" ||
+    filters.value.sales !== "All" ||
+    filters.value.sort !== "Newest" ||
+    filters.value.search.trim() !== ""
+  );
+});
+
+const resetFilters = () => {
+  filters.value = {
+    category: "All",
+    status: "All",
+    price: "All",
+    sales: "All",
+    sort: "Newest",
+    search: "",
+  };
+};
 
 const products: Product[] = [
   {

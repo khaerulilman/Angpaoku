@@ -74,15 +74,6 @@ const statsCards: StatCardData[] = [
     badgeClass: "text-green-600 bg-green-50",
   },
   {
-    label: "Points Balance",
-    value: "84,200",
-    icon: "toll",
-    iconBgClass: "bg-tertiary-fixed/20",
-    iconTextClass: "text-tertiary",
-    badge: "Pts",
-    badgeClass: "text-tertiary bg-tertiary-fixed/30",
-  },
-  {
     label: "Total Sales",
     value: "1,892",
     icon: "shopping_cart",

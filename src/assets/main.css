@@ -79,6 +79,10 @@
     box-shadow: 0px 20px 40px rgba(187, 21, 44, 0.06);
   }
 
+  .editorial-shadow {
+    box-shadow: 0px 20px 40px rgba(187, 21, 44, 0.06);
+  }
+
   .shadow-angpao-lg {
     box-shadow: 0px 20px 40px rgba(187, 21, 44, 0.15);
   }

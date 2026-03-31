@@ -24,6 +24,18 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/pages/LoginPage.vue'),
+      meta: { title: 'Login | Angpaoku Digital Concierge' },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/pages/RegisterPage.vue'),
+      meta: { title: 'Join Angpaoku | Digital Creator Concierge' },
+    },
 
     // ---- Dashboard (Creator Portal) ----
     {
@@ -49,10 +61,10 @@ const router = createRouter({
           meta: { title: 'Transactions | Angpaoku Dashboard' },
         },
         {
-          path: 'points',
-          name: 'points',
-          component: () => import('@/pages/dashboard/PointsPage.vue'),
-          meta: { title: 'Points | Angpaoku Dashboard' },
+          path: 'donations',
+          name: 'donations',
+          component: () => import('@/pages/dashboard/DonationsPage.vue'),
+          meta: { title: 'Donations | Angpaoku Dashboard' },
         },
         {
           path: 'obs-settings',

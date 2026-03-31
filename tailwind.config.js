@@ -8,6 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        "brand-red": "#E63946",
         "inverse-surface": "#303032",
         "inverse-primary": "#ffb3b1",
         "surface-container-high": "#eae7ea",

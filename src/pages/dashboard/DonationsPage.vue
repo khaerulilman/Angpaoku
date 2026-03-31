@@ -1,7 +1,7 @@
 <template>
   <div>
     <DashboardNavbar
-      page-title="Points"
+      page-title="Donations"
       search-placeholder="Search donations..."
     />
 
@@ -12,15 +12,12 @@
           <h2
             class="text-3xl font-extrabold tracking-tight text-on-surface mb-2"
           >
-            My Points
+            Donations Received
           </h2>
           <p class="text-on-surface-variant max-w-md">
-            Track your gift performance and manage your earnings with ease.
+            Track donations received and manage your earned points for exchange.
           </p>
         </div>
-        <AppButton variant="brand" size="lg" icon="account_balance_wallet"
-          >Withdraw Points</AppButton
-        >
       </div>
 
       <!-- Dashboard Bento -->
@@ -46,20 +43,19 @@
               </div>
               <span
                 class="text-tertiary font-bold text-xs bg-tertiary-fixed px-3 py-1 rounded-full uppercase tracking-wider"
-                >Active Balance</span
+                >Donations</span
               >
             </div>
             <div class="mt-auto">
               <span class="text-on-surface-variant font-medium mb-1 block"
-                >Total Points</span
+                >Total Donations</span
               >
               <div class="flex items-baseline gap-2 mb-6">
                 <h3
                   class="text-5xl font-extrabold text-on-surface tracking-tighter"
                 >
-                  1,245,000
+                  Rp 12.450.000
                 </h3>
-                <span class="text-on-surface-variant font-bold">pts</span>
               </div>
               <div
                 class="bg-surface-container-low p-5 rounded-2xl flex items-center justify-between"
@@ -68,14 +64,14 @@
                   <p
                     class="text-xs text-on-surface-variant uppercase font-bold tracking-widest mb-1"
                   >
-                    IDR Equivalent
+                    Points Balance
                   </p>
-                  <p class="text-2xl font-bold text-secondary">Rp 12.450.000</p>
+                  <p class="text-2xl font-bold text-secondary">1,245,000 pts</p>
                 </div>
                 <div class="text-right">
                   <span
                     class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md"
-                    >+12% this week</span
+                    >+8 donations this week</span
                   >
                 </div>
               </div>
@@ -114,24 +110,7 @@
           </div>
           <div
             class="col-span-2 bg-surface-container-lowest p-6 rounded-[1.5rem] flex items-center gap-6 relative overflow-hidden"
-          >
-            <div class="flex-1">
-              <div class="flex justify-between items-center mb-4">
-                <h4 class="font-bold">Withdrawal Progress</h4>
-                <span class="text-sm font-medium text-tertiary"
-                  >75% of goal</span
-                >
-              </div>
-              <div
-                class="w-full h-3 bg-tertiary-fixed rounded-full overflow-hidden"
-              >
-                <div class="h-full bg-tertiary w-3/4 rounded-full"></div>
-              </div>
-              <p class="text-xs text-on-surface-variant mt-3 italic">
-                Threshold reached! You can withdraw your funds anytime.
-              </p>
-            </div>
-          </div>
+          ></div>
         </div>
       </div>
 
@@ -140,7 +119,9 @@
         <div
           class="p-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
-          <h3 class="text-xl font-bold text-on-surface">Donation History</h3>
+          <h3 class="text-xl font-bold text-on-surface">
+            Donations & Points Earned
+          </h3>
           <div class="flex items-center gap-3">
             <div
               class="bg-surface-container-low px-4 py-2 rounded-full flex items-center gap-2"
@@ -179,11 +160,11 @@
               class="text-on-surface-variant/60 uppercase text-[10px] font-bold tracking-[0.15em]"
             >
               <tr>
-                <th class="pb-4 pl-4">User</th>
+                <th class="pb-4 pl-4">Donor</th>
                 <th class="pb-4">Date/Time</th>
                 <th class="pb-4">Message</th>
-                <th class="pb-4">Points Received</th>
-                <th class="pb-4">IDR Equivalent</th>
+                <th class="pb-4">Donation Amount</th>
+                <th class="pb-4">Points Earned</th>
                 <th class="pb-4 pr-4">Status</th>
               </tr>
             </thead>
@@ -233,6 +214,11 @@
                   </p>
                 </td>
                 <td class="py-5">
+                  <p class="font-bold text-on-surface">
+                    {{ donation.idrEquivalent }}
+                  </p>
+                </td>
+                <td class="py-5">
                   <div class="flex items-center gap-1.5">
                     <span
                       class="material-symbols-outlined text-primary text-lg"
@@ -243,11 +229,6 @@
                       donation.points
                     }}</span>
                   </div>
-                </td>
-                <td class="py-5">
-                  <p class="font-bold text-on-surface">
-                    {{ donation.idrEquivalent }}
-                  </p>
                 </td>
                 <td class="py-5 pr-4 rounded-r-2xl">
                   <AppBadge

@@ -6,46 +6,15 @@
     />
 
     <div class="pt-4 px-10 pb-20 mx-auto">
-      <!-- Header & Summary -->
-      <div
-        class="mb-10 flex flex-col md:flex-row gap-6 items-end justify-between"
-      >
-        <div class="space-y-1">
-          <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
-            Transaction Activity
-          </h2>
-          <p class="text-on-surface-variant max-w-md">
-            Track your digital product sales and customer interactions in
-            real-time.
-          </p>
-        </div>
-        <div class="transactions-summary-grid">
-          <AppCard class="p-6" shadow="angpao">
-            <p
-              class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
-            >
-              Total Revenue
-            </p>
-            <h3 class="text-2xl font-bold text-primary">Rp 42.850.000</h3>
-            <div
-              class="mt-2 flex items-center gap-1 text-emerald-600 text-xs font-medium"
-            >
-              <span class="material-symbols-outlined text-xs">trending_up</span>
-              <span>+12.5% this month</span>
-            </div>
-          </AppCard>
-          <AppCard class="p-6" shadow="angpao">
-            <p
-              class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
-            >
-              Product Sales
-            </p>
-            <h3 class="text-2xl font-bold text-on-surface">1,284</h3>
-            <p class="text-xs text-on-surface-variant mt-2 font-medium">
-              Lifetime units sold
-            </p>
-          </AppCard>
-        </div>
+      <!-- Header -->
+      <div class="space-y-1 mb-6">
+        <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
+          Transaction Activity
+        </h2>
+        <p class="text-on-surface-variant max-w-md">
+          Track your digital product sales and customer interactions in
+          real-time.
+        </p>
       </div>
 
       <!-- Filter Bar -->
@@ -70,6 +39,35 @@
           <span class="material-symbols-outlined text-sm">download</span>Export
           CSV
         </button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="transactions-summary-grid grid grid-cols-1 gap-4 md:grid-cols-2 mt-6">
+        <AppCard class="p-6 h-full" shadow="angpao">
+          <p
+            class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
+          >
+            Total Revenue
+          </p>
+          <h3 class="text-2xl font-bold text-primary">Rp 42.850.000</h3>
+          <div
+            class="mt-2 flex items-center gap-1 text-emerald-600 text-xs font-medium"
+          >
+            <span class="material-symbols-outlined text-xs">trending_up</span>
+            <span>+12.5% this month</span>
+          </div>
+        </AppCard>
+        <AppCard class="p-6 h-full" shadow="angpao">
+          <p
+            class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
+          >
+            Product Sales
+          </p>
+          <h3 class="text-2xl font-bold text-on-surface">1,284</h3>
+          <p class="text-xs text-on-surface-variant mt-2 font-medium">
+            Lifetime units sold
+          </p>
+        </AppCard>
       </div>
 
       <!-- Transaction Table -->
