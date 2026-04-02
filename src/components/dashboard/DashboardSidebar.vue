@@ -49,29 +49,38 @@
           <span class="material-symbols-outlined text-lg">help</span>
           <span>Help Center</span>
         </a>
-        <a
-          href="#"
+        <button
+          type="button"
           class="flex items-center gap-3 text-on-surface/60 px-4 py-2 text-xs hover:text-primary transition-colors"
+          @click="handleLogout"
         >
           <span class="material-symbols-outlined text-lg">logout</span>
           <span>Logout</span>
-        </a>
+        </button>
       </div>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useDashboardStore } from "@/stores/dashboard";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
+const router = useRouter();
 const store = useDashboardStore();
+const authStore = useAuthStore();
 const navItems = store.navItems;
 
 function isActive(itemRoute: string): boolean {
   // Exact match for dashboard root, startsWith for children
   if (itemRoute === "/dashboard") return route.path === "/dashboard";
   return route.path.startsWith(itemRoute);
+}
+
+async function handleLogout() {
+  await authStore.logout();
+  await router.push({ name: "login" });
 }
 </script>

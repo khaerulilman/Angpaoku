@@ -1,52 +1,139 @@
-// ============================================
-// Angpaoku — API Service Layer (Stub)
-// ============================================
-// This file serves as the central API module.
-// All API calls will be defined here when the backend is ready.
-// For now, each function is a placeholder returning empty promises.
-
+import axios from 'axios'
 import type {
-  User,
-  DashboardStats,
   ActivityItem,
-  Transaction,
-  Product,
+  DashboardStats,
   Donation,
   OverlaySettings,
+  Product,
+  Transaction,
 } from '@/types'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
-// ---- Auth ----
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+interface ApiEnvelope<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function extractApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  if (!isObject(error)) {
+    return fallbackMessage
+  }
+
+  const response = error.response
+  if (!isObject(response)) {
+    return fallbackMessage
+  }
+
+  const payload = response.data
+  if (!isObject(payload)) {
+    return fallbackMessage
+  }
+
+  const message = payload.message
+  if (typeof message === 'string' && message.trim() !== '') {
+    return message
+  }
+
+  return fallbackMessage
+}
+
+function unwrapData<T>(payload: ApiEnvelope<T>): T {
+  return payload.data
+}
+
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  created_at: string
+  updated_at: string
+}
+
+export interface LoginResponse {
+  access_expires_at: string
+  refresh_expires_at: string
+  user: AuthUser
+}
+
+export interface RegisterPayload {
+  name: string
+  email: string
+  password: string
+}
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
 export const authApi = {
-  login: async (_email: string, _password: string): Promise<{ token: string; user: User }> => {
-    // TODO: POST ${BASE_URL}/auth/login
-    throw new Error('Not implemented')
+  async register(payload: RegisterPayload): Promise<AuthUser> {
+    try {
+      const response = await apiClient.post<ApiEnvelope<{ user: AuthUser }>>('/auth/register', payload)
+      return unwrapData(response.data).user
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'register failed'))
+    }
   },
-  register: async (_payload: Partial<User>): Promise<User> => {
-    // TODO: POST ${BASE_URL}/auth/register
-    throw new Error('Not implemented')
+
+  async login(payload: LoginPayload): Promise<LoginResponse> {
+    try {
+      const response = await apiClient.post<ApiEnvelope<LoginResponse>>('/auth/login', payload)
+      return unwrapData(response.data)
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'login failed'))
+    }
   },
-  logout: async (): Promise<void> => {
-    // TODO: POST ${BASE_URL}/auth/logout
-    throw new Error('Not implemented')
+
+  async me(): Promise<AuthUser> {
+    try {
+      const response = await apiClient.get<ApiEnvelope<{ user: AuthUser }>>('/auth/me')
+      return unwrapData(response.data).user
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to load current user'))
+    }
   },
-  me: async (): Promise<User> => {
-    // TODO: GET ${BASE_URL}/auth/me
-    throw new Error('Not implemented')
+
+  async refresh(): Promise<LoginResponse> {
+    try {
+      const response = await apiClient.post<ApiEnvelope<LoginResponse>>('/auth/refresh')
+      return unwrapData(response.data)
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'refresh failed'))
+    }
   },
+
+  async logout(): Promise<void> {
+    try {
+      await apiClient.post('/auth/logout')
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'logout failed'))
+    }
+  },
+}
+
+function notImplemented(methodName: string): never {
+  throw new Error(`${methodName} is not implemented yet`)
 }
 
 // ---- Dashboard ----
 export const dashboardApi = {
-  getStats: async (): Promise<DashboardStats> => {
-    // TODO: GET ${BASE_URL}/dashboard/stats
-    throw new Error('Not implemented')
-  },
-  getRecentActivity: async (): Promise<ActivityItem[]> => {
-    // TODO: GET ${BASE_URL}/dashboard/activity
-    throw new Error('Not implemented')
-  },
+  getStats: async (): Promise<DashboardStats> => notImplemented('dashboardApi.getStats'),
+  getRecentActivity: async (): Promise<ActivityItem[]> => notImplemented('dashboardApi.getRecentActivity'),
 }
 
 // ---- Transactions ----
@@ -54,18 +141,9 @@ export const transactionsApi = {
   getAll: async (_params?: { page?: number; limit?: number; status?: string }): Promise<{
     data: Transaction[]
     total: number
-  }> => {
-    // TODO: GET ${BASE_URL}/transactions
-    throw new Error('Not implemented')
-  },
-  getById: async (_id: string): Promise<Transaction> => {
-    // TODO: GET ${BASE_URL}/transactions/:id
-    throw new Error('Not implemented')
-  },
-  exportCsv: async (): Promise<Blob> => {
-    // TODO: GET ${BASE_URL}/transactions/export
-    throw new Error('Not implemented')
-  },
+  }> => notImplemented('transactionsApi.getAll'),
+  getById: async (_id: string): Promise<Transaction> => notImplemented('transactionsApi.getById'),
+  exportCsv: async (): Promise<Blob> => notImplemented('transactionsApi.exportCsv'),
 }
 
 // ---- Products ----
@@ -73,86 +151,44 @@ export const productsApi = {
   getAll: async (_params?: { page?: number; limit?: number }): Promise<{
     data: Product[]
     total: number
-  }> => {
-    // TODO: GET ${BASE_URL}/products
-    throw new Error('Not implemented')
-  },
-  getById: async (_id: string): Promise<Product> => {
-    // TODO: GET ${BASE_URL}/products/:id
-    throw new Error('Not implemented')
-  },
-  create: async (_payload: Partial<Product>): Promise<Product> => {
-    // TODO: POST ${BASE_URL}/products
-    throw new Error('Not implemented')
-  },
-  update: async (_id: string, _payload: Partial<Product>): Promise<Product> => {
-    // TODO: PUT ${BASE_URL}/products/:id
-    throw new Error('Not implemented')
-  },
-  delete: async (_id: string): Promise<void> => {
-    // TODO: DELETE ${BASE_URL}/products/:id
-    throw new Error('Not implemented')
-  },
+  }> => notImplemented('productsApi.getAll'),
+  getById: async (_id: string): Promise<Product> => notImplemented('productsApi.getById'),
+  create: async (_payload: Partial<Product>): Promise<Product> => notImplemented('productsApi.create'),
+  update: async (_id: string, _payload: Partial<Product>): Promise<Product> =>
+    notImplemented('productsApi.update'),
+  delete: async (_id: string): Promise<void> => notImplemented('productsApi.delete'),
 }
 
 // ---- Points / Donations ----
 export const pointsApi = {
-  getDonations: async (_params?: { page?: number; limit?: number; period?: string }): Promise<{
-    data: Donation[]
-    total: number
-  }> => {
-    // TODO: GET ${BASE_URL}/points/donations
-    throw new Error('Not implemented')
-  },
-  getBalance: async (): Promise<{ points: number; idrEquivalent: number }> => {
-    // TODO: GET ${BASE_URL}/points/balance
-    throw new Error('Not implemented')
-  },
-  withdraw: async (_amount: number): Promise<void> => {
-    // TODO: POST ${BASE_URL}/points/withdraw
-    throw new Error('Not implemented')
-  },
+  getDonations: async (_params?: {
+    page?: number
+    limit?: number
+    period?: string
+  }): Promise<{ data: Donation[]; total: number }> => notImplemented('pointsApi.getDonations'),
+  getBalance: async (): Promise<{ points: number; idrEquivalent: number }> =>
+    notImplemented('pointsApi.getBalance'),
+  withdraw: async (_amount: number): Promise<void> => notImplemented('pointsApi.withdraw'),
 }
 
 // ---- OBS Overlay ----
 export const overlayApi = {
-  getSettings: async (): Promise<OverlaySettings> => {
-    // TODO: GET ${BASE_URL}/overlay/settings
-    throw new Error('Not implemented')
-  },
-  updateSettings: async (_payload: Partial<OverlaySettings>): Promise<OverlaySettings> => {
-    // TODO: PUT ${BASE_URL}/overlay/settings
-    throw new Error('Not implemented')
-  },
-  resetSettings: async (): Promise<OverlaySettings> => {
-    // TODO: POST ${BASE_URL}/overlay/reset
-    throw new Error('Not implemented')
-  },
+  getSettings: async (): Promise<OverlaySettings> => notImplemented('overlayApi.getSettings'),
+  updateSettings: async (_payload: Partial<OverlaySettings>): Promise<OverlaySettings> =>
+    notImplemented('overlayApi.updateSettings'),
+  resetSettings: async (): Promise<OverlaySettings> => notImplemented('overlayApi.resetSettings'),
 }
 
 // ---- Analytics ----
 export const analyticsApi = {
-  getEarningsChart: async (_period?: string): Promise<{ labels: string[]; data: number[] }> => {
-    // TODO: GET ${BASE_URL}/analytics/earnings
-    throw new Error('Not implemented')
-  },
-  getSummary: async (): Promise<Record<string, unknown>> => {
-    // TODO: GET ${BASE_URL}/analytics/summary
-    throw new Error('Not implemented')
-  },
+  getEarningsChart: async (_period?: string): Promise<{ labels: string[]; data: number[] }> =>
+    notImplemented('analyticsApi.getEarningsChart'),
+  getSummary: async (): Promise<Record<string, unknown>> => notImplemented('analyticsApi.getSummary'),
 }
 
 // ---- Withdraw ----
 export const withdrawApi = {
-  getHistory: async (): Promise<Record<string, unknown>[]> => {
-    // TODO: GET ${BASE_URL}/withdraw/history
-    throw new Error('Not implemented')
-  },
-  request: async (_amount: number, _method: string): Promise<void> => {
-    // TODO: POST ${BASE_URL}/withdraw/request
-    throw new Error('Not implemented')
-  },
+  getHistory: async (): Promise<Record<string, unknown>[]> => notImplemented('withdrawApi.getHistory'),
+  request: async (_amount: number, _method: string): Promise<void> => notImplemented('withdrawApi.request'),
 }
 
-// Suppress unused variable warning
-void BASE_URL

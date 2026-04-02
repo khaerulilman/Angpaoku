@@ -21,7 +21,7 @@
             Join the elite circle of creators using our digital concierge to manage gifts and connections.
           </p>
         </header>
-        <form class="space-y-5" @submit.prevent>
+        <form class="space-y-5" @submit.prevent="handleRegister">
           <div class="space-y-1.5">
             <label class="font-label text-sm font-semibold text-on-surface-variant" for="name">Full Name</label>
             <div class="relative group">
@@ -31,6 +31,8 @@
                 type="text"
                 placeholder="Enter your full name"
                 autocomplete="name"
+                v-model.trim="form.name"
+                required
                 class="w-full px-4 py-3 bg-surface-container-highest border-none rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
               />
             </div>
@@ -47,6 +49,8 @@
                 type="email"
                 placeholder="you@creator.com"
                 autocomplete="email"
+                v-model.trim="form.email"
+                required
                 class="w-full px-4 py-3 bg-surface-container-highest border-none rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
               />
             </div>
@@ -63,6 +67,9 @@
                 type="password"
                 placeholder="********"
                 autocomplete="new-password"
+                v-model="form.password"
+                minlength="8"
+                required
                 class="w-full px-4 py-3 bg-surface-container-highest border-none rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
               />
             </div>
@@ -76,6 +83,9 @@
                 type="password"
                 placeholder="********"
                 autocomplete="new-password"
+                v-model="form.confirmPassword"
+                minlength="8"
+                required
                 class="w-full px-4 py-3 bg-surface-container-highest border-none rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
               />
             </div>
@@ -85,6 +95,7 @@
             <input
               id="terms"
               type="checkbox"
+              v-model="form.termsAccepted"
               class="mt-1 rounded text-primary focus:ring-primary border-outline-variant/30"
             />
             <label class="text-xs text-on-surface-variant leading-tight" for="terms">
@@ -96,14 +107,19 @@
           <div class="pt-4">
             <button
               type="submit"
+              :disabled="isSubmitting"
               class="w-full py-4 bg-[#E63946] text-white font-headline font-bold rounded-full editorial-shadow active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 group hover:bg-[#c32d3f]"
             >
-              <span>Create Account</span>
+              <span>{{ isSubmitting ? 'Creating Account...' : 'Create Account' }}</span>
               <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform"
                 >arrow_forward</span
               >
             </button>
           </div>
+
+          <p v-if="errorMessage" class="text-sm font-medium text-red-500">
+            {{ errorMessage }}
+          </p>
         </form>
       </div>
     </section>
@@ -169,5 +185,51 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const form = reactive({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  termsAccepted: false,
+})
+
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+
+async function handleRegister() {
+  errorMessage.value = ''
+
+  if (form.password !== form.confirmPassword) {
+    errorMessage.value = 'Confirm password must match password'
+    return
+  }
+
+  if (!form.termsAccepted) {
+    errorMessage.value = 'You must accept Terms of Service and Privacy Policy'
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    await authStore.register({
+      name: form.name,
+      email: form.email,
+      password: form.password,
+    })
+
+    await router.push({ name: 'login', query: { registered: '1' } })
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Failed to register'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>

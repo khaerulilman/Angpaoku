@@ -27,7 +27,7 @@
           </p>
         </header>
 
-        <form class="space-y-6" @submit.prevent>
+        <form class="space-y-6" @submit.prevent="handleLogin">
           <div class="space-y-2">
             <label class="block text-sm font-semibold text-on-surface-variant" for="email">
               Email Address
@@ -38,6 +38,8 @@
                 type="email"
                 placeholder="name@creator.com"
                 autocomplete="email"
+                v-model.trim="form.email"
+                required
                 class="w-full px-4 py-3.5 bg-surface-container-highest rounded-lg border-none focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all placeholder:text-outline"
               />
             </div>
@@ -58,6 +60,9 @@
                 type="password"
                 placeholder="********"
                 autocomplete="current-password"
+                v-model="form.password"
+                minlength="8"
+                required
                 class="w-full px-4 py-3.5 bg-surface-container-highest rounded-lg border-none focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all placeholder:text-outline"
               />
             </div>
@@ -74,10 +79,18 @@
 
           <button
             type="submit"
+            :disabled="isSubmitting"
             class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold rounded-full editorial-shadow active:scale-[0.98] transition-all hover:opacity-90"
           >
-            Log In
+            {{ isSubmitting ? 'Logging in...' : 'Log In' }}
           </button>
+
+          <p v-if="errorMessage" class="text-sm font-medium text-red-500">
+            {{ errorMessage }}
+          </p>
+          <p v-if="registeredMessage" class="text-sm font-medium text-green-600">
+            {{ registeredMessage }}
+          </p>
 
         </form>
 
@@ -185,5 +198,43 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
+const form = reactive({
+  email: '',
+  password: '',
+})
+
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+
+const registeredMessage = computed(() =>
+  route.query.registered === '1' ? 'Register success. Please login with your account.' : '',
+)
+
+async function handleLogin() {
+  errorMessage.value = ''
+  isSubmitting.value = true
+
+  try {
+    await authStore.login({
+      email: form.email,
+      password: form.password,
+    })
+
+    const redirectTarget = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+    await router.push(redirectTarget)
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Failed to login'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
