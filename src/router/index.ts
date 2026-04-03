@@ -45,6 +45,12 @@ const router = createRouter({
           meta: { title: "Products | Angpaoku Dashboard" },
         },
         {
+          path: "add-product",
+          name: "add-product",
+          component: () => import("@/pages/dashboard/AddNewProductPage.vue"),
+          meta: { title: "Add New Product | Angpaoku Dashboard" },
+        },
+        {
           path: "transactions",
           name: "transactions",
           component: () => import("@/pages/dashboard/TransactionsPage.vue"),
