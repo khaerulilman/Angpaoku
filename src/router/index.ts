@@ -74,6 +74,12 @@ const router = createRouter({
           component: () => import("@/pages/dashboard/WithdrawPage.vue"),
           meta: { title: "Withdraw | Angpaoku Dashboard" },
         },
+        {
+          path: "profile",
+          name: "profile",
+          component: () => import("@/pages/dashboard/ProfilePage.vue"),
+          meta: { title: "Profile | Angpaoku Dashboard" },
+        },
       ],
     },
 
