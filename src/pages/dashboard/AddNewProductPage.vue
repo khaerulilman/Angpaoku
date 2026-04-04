@@ -33,7 +33,7 @@
             <div class="mb-6 flex items-center gap-3">
               <span
                 class="material-symbols-outlined text-primary"
-                style="font-variation-settings: 'FILL' 1"
+                style="font-variation-settings: &quot;FILL&quot; 1"
                 >info</span
               >
               <h2 class="text-xl font-headline font-bold text-on-surface">
@@ -88,28 +88,6 @@
                   class="w-full rounded-xl border border-outline-variant/10 bg-surface-container-highest px-4 py-3 text-sm font-medium text-on-surface transition-colors placeholder:text-on-surface-variant/50 focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-
-              <div class="space-y-2">
-                <label
-                  class="ml-1 block text-xs font-bold uppercase tracking-widest text-on-surface-variant/70"
-                  >Tags</label
-                >
-                <input
-                  type="text"
-                  placeholder="Add tags (press enter)"
-                  class="h-12 w-full rounded-xl border border-outline-variant/10 bg-surface-container-highest px-4 text-sm font-medium text-on-surface transition-colors placeholder:text-on-surface-variant/50 focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <span
-                    class="rounded-full bg-secondary-container/20 px-3 py-1 text-xs font-bold text-on-secondary-container"
-                    >Photography</span
-                  >
-                  <span
-                    class="rounded-full bg-secondary-container/20 px-3 py-1 text-xs font-bold text-on-secondary-container"
-                    >Course</span
-                  >
-                </div>
-              </div>
             </div>
           </AppCard>
 
@@ -117,7 +95,7 @@
             <div class="mb-6 flex items-center gap-3">
               <span
                 class="material-symbols-outlined text-primary"
-                style="font-variation-settings: 'FILL' 1"
+                style="font-variation-settings: &quot;FILL&quot; 1"
                 >link</span
               >
               <h2 class="text-xl font-headline font-bold text-on-surface">
@@ -191,7 +169,7 @@
             <div class="mb-6 flex items-center gap-3">
               <span
                 class="material-symbols-outlined text-primary"
-                style="font-variation-settings: 'FILL' 1"
+                style="font-variation-settings: &quot;FILL&quot; 1"
                 >collections</span
               >
               <h2 class="text-xl font-headline font-bold text-on-surface">
@@ -282,7 +260,7 @@
               <div class="mb-6 flex items-center gap-3">
                 <span
                   class="material-symbols-outlined text-primary"
-                  style="font-variation-settings: 'FILL' 1"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
                   >payments</span
                 >
                 <h2 class="text-xl font-headline font-bold text-on-surface">
@@ -307,35 +285,26 @@
                     Free
                   </button>
                 </div>
-
                 <div class="space-y-2">
                   <label
                     class="ml-1 block text-xs font-bold uppercase tracking-widest text-on-surface-variant/70"
-                    >Price (USD)</label
                   >
+                    Price (IDR)
+                  </label>
+
                   <div class="relative">
                     <span
                       class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-on-surface-variant"
-                      >$</span
                     >
+                      Rp.
+                    </span>
+
                     <input
-                      type="number"
-                      value="49.00"
-                      class="h-12 w-full rounded-xl border border-outline-variant/10 bg-surface-container-highest pl-8 pr-4 text-sm font-bold text-on-surface transition-colors focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      type="text"
+                      value="200.000"
+                      class="h-12 w-full rounded-xl border border-outline-variant/10 bg-surface-container-highest pl-14 pr-4 text-sm font-bold text-on-surface transition-colors focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-semibold text-on-surface-variant"
-                    >Enable Discount</span
-                  >
-                  <label class="relative inline-flex cursor-pointer items-center">
-                    <input type="checkbox" class="peer sr-only" />
-                    <div
-                      class="h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full"
-                    />
-                  </label>
                 </div>
               </div>
             </AppCard>
@@ -344,7 +313,7 @@
               <div class="mb-6 flex items-center gap-3">
                 <span
                   class="material-symbols-outlined text-primary"
-                  style="font-variation-settings: 'FILL' 1"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
                   >visibility</span
                 >
                 <h2 class="text-xl font-headline font-bold text-on-surface">
@@ -366,7 +335,9 @@
                     <span class="text-xs font-bold text-on-surface-variant"
                       >Draft</span
                     >
-                    <label class="relative inline-flex cursor-pointer items-center">
+                    <label
+                      class="relative inline-flex cursor-pointer items-center"
+                    >
                       <input type="checkbox" class="peer sr-only" checked />
                       <div
                         class="h-7 w-14 rounded-full bg-slate-200 after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-7"
@@ -420,7 +391,7 @@
             <div class="mb-4 flex items-center gap-2 text-tertiary">
               <span
                 class="material-symbols-outlined"
-                style="font-variation-settings: 'FILL' 1"
+                style="font-variation-settings: &quot;FILL&quot; 1"
                 >lightbulb</span
               >
               <h3 class="text-sm font-bold uppercase tracking-wider">
@@ -487,7 +458,9 @@
 
             <div class="space-y-4 p-6">
               <div>
-                <h3 class="text-lg font-headline font-extrabold text-on-surface">
+                <h3
+                  class="text-lg font-headline font-extrabold text-on-surface"
+                >
                   Masterclass Photography 2024
                 </h3>
                 <p class="mt-2 text-xs text-on-surface-variant">
@@ -496,7 +469,9 @@
                 </p>
               </div>
 
-              <div class="flex items-center justify-between border-t border-surface-container pt-4">
+              <div
+                class="flex items-center justify-between border-t border-surface-container pt-4"
+              >
                 <div>
                   <p
                     class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
