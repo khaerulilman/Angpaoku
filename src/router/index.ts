@@ -26,6 +26,14 @@ const router = createRouter({
       ],
     },
 
+    // ---- Store Preview (Public) ----
+    {
+      path: "/store-preview",
+      name: "store-preview",
+      component: () => import("@/pages/StorePreviewPage.vue"),
+      meta: { title: "Store Preview | Angpaoku" },
+    },
+
     // ---- Dashboard (Creator Portal) ----
     {
       path: "/dashboard",
