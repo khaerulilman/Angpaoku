@@ -135,6 +135,49 @@ export interface CreateProductPayload {
   gallery_images?: File[]
 }
 
+function buildProductFormData(payload: CreateProductPayload): FormData {
+  const formData = new FormData()
+  formData.append('name', payload.name)
+  formData.append('category_id', payload.category_id)
+  formData.append('description', payload.description)
+  formData.append('product_link', payload.product_link)
+  formData.append('link_verified', String(payload.link_verified))
+  formData.append('discount_percentage', String(payload.discount_percentage))
+  formData.append('pricing_type', payload.pricing_type)
+  formData.append('price', String(payload.price))
+  formData.append('visibility', payload.visibility)
+
+  if (payload.slug) {
+    formData.append('slug', payload.slug)
+  }
+
+  if (payload.discount_end_date) {
+    formData.append('discount_end_date', payload.discount_end_date)
+  }
+
+  if (payload.cover_image_url) {
+    formData.append('cover_image_url', payload.cover_image_url)
+  }
+
+  if (payload.gallery_image_urls && payload.gallery_image_urls.length > 0) {
+    payload.gallery_image_urls.forEach((url) => {
+      formData.append('gallery_image_urls', url)
+    })
+  }
+
+  if (payload.product_cover) {
+    formData.append('product_cover', payload.product_cover)
+  }
+
+  if (payload.gallery_images && payload.gallery_images.length > 0) {
+    payload.gallery_images.forEach((file) => {
+      formData.append('gallery_images', file)
+    })
+  }
+
+  return formData
+}
+
 export const authApi = {
   async register(payload: RegisterPayload): Promise<AuthUser> {
     try {
@@ -244,44 +287,7 @@ export const productsApi = {
 
   async create(payload: CreateProductPayload): Promise<ProductRecord> {
     try {
-      const formData = new FormData()
-      formData.append('name', payload.name)
-      formData.append('category_id', payload.category_id)
-      formData.append('description', payload.description)
-      formData.append('product_link', payload.product_link)
-      formData.append('link_verified', String(payload.link_verified))
-      formData.append('discount_percentage', String(payload.discount_percentage))
-      formData.append('pricing_type', payload.pricing_type)
-      formData.append('price', String(payload.price))
-      formData.append('visibility', payload.visibility)
-
-      if (payload.slug) {
-        formData.append('slug', payload.slug)
-      }
-
-      if (payload.discount_end_date) {
-        formData.append('discount_end_date', payload.discount_end_date)
-      }
-
-      if (payload.cover_image_url) {
-        formData.append('cover_image_url', payload.cover_image_url)
-      }
-
-      if (payload.gallery_image_urls && payload.gallery_image_urls.length > 0) {
-        payload.gallery_image_urls.forEach((url) => {
-          formData.append('gallery_image_urls', url)
-        })
-      }
-
-      if (payload.product_cover) {
-        formData.append('product_cover', payload.product_cover)
-      }
-
-      if (payload.gallery_images && payload.gallery_images.length > 0) {
-        payload.gallery_images.forEach((file) => {
-          formData.append('gallery_images', file)
-        })
-      }
+      const formData = buildProductFormData(payload)
 
       const response = await apiClient.post<ApiEnvelope<{ product: ProductRecord }>>('/products', formData, {
         headers: {
@@ -295,8 +301,20 @@ export const productsApi = {
     }
   },
 
-  update: async (_id: string, _payload: Partial<ProductRecord>): Promise<ProductRecord> =>
-    notImplemented('productsApi.update'),
+  async update(id: string, payload: CreateProductPayload): Promise<ProductRecord> {
+    try {
+      const formData = buildProductFormData(payload)
+      const response = await apiClient.put<ApiEnvelope<{ product: ProductRecord }>>(`/products/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      return unwrapData(response.data).product
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to update product'))
+    }
+  },
 
   async delete(id: string): Promise<void> {
     try {

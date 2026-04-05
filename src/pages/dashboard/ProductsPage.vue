@@ -25,6 +25,13 @@
         >
       </div>
 
+      <p v-if="actionError" class="mb-4 text-sm font-medium text-red-600">
+        {{ actionError }}
+      </p>
+      <p v-if="actionMessage" class="mb-4 text-sm font-medium text-emerald-600">
+        {{ actionMessage }}
+      </p>
+
       <AppCard class="mb-6 border border-outline-variant/10 p-4" shadow="sm">
         <div
           class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
@@ -418,6 +425,7 @@
                       type="button"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                       title="Edit product"
+                      @click="goToEditProduct(product)"
                     >
                       <span class="material-symbols-outlined text-lg"
                         >edit</span
@@ -425,8 +433,15 @@
                     </button>
                     <button
                       type="button"
+                      :disabled="isDeletingProduct"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      :class="
+                        isDeletingProduct
+                          ? 'cursor-not-allowed opacity-60'
+                          : ''
+                      "
                       title="Delete product"
+                      @click="openDeleteConfirm(product)"
                     >
                       <span class="material-symbols-outlined text-lg"
                         >delete</span
@@ -446,6 +461,63 @@
           </div>
         </div>
       </AppCard>
+    </div>
+
+    <div
+      v-if="showDeleteConfirm && productToDelete"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[1px]"
+      @click.self="closeDeleteConfirm"
+    >
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mb-4 flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"
+          >
+            <span class="material-symbols-outlined">delete</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-on-surface">Delete Product</h3>
+            <p class="text-xs text-on-surface-variant">Confirmation Flow</p>
+          </div>
+        </div>
+
+        <div
+          class="mb-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4"
+        >
+          <p class="text-sm font-semibold text-on-surface">
+            {{ productToDelete.name }}
+          </p>
+          <p class="mt-1 text-xs text-on-surface-variant">
+            1. Pastikan produk yang dipilih sudah benar.
+          </p>
+          <p class="text-xs text-on-surface-variant">
+            2. Klik tombol delete untuk menghapus permanen.
+          </p>
+        </div>
+
+        <p v-if="deleteError" class="mb-4 text-sm font-medium text-red-600">
+          {{ deleteError }}
+        </p>
+
+        <div class="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-outline-variant/30 px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isDeletingProduct"
+            @click="closeDeleteConfirm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isDeletingProduct"
+            @click="confirmDeleteProduct"
+          >
+            {{ isDeletingProduct ? "Deleting..." : "Delete Product" }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -467,12 +539,18 @@ const router = useRouter();
 
 const isLoadingProducts = ref(false);
 const isCreatingCategory = ref(false);
+const isDeletingProduct = ref(false);
+const showDeleteConfirm = ref(false);
 const categoryError = ref("");
 const categorySuccess = ref("");
+const actionError = ref("");
+const actionMessage = ref("");
+const deleteError = ref("");
 const showCreateCategoryCard = ref(false);
 
 const products = ref<ProductRecord[]>([]);
 const categories = ref<Category[]>([]);
+const productToDelete = ref<ProductRecord | null>(null);
 
 const filters = ref({
   search: "",
@@ -525,6 +603,10 @@ function goToAddProduct(): void {
   router.push({ name: "add-product" });
 }
 
+function goToEditProduct(product: ProductRecord): void {
+  router.push({ name: "edit-product", params: { id: product.id } });
+}
+
 function getFinalPrice(product: ProductRecord): number {
   if (product.pricing_type === "free") {
     return 0;
@@ -547,12 +629,29 @@ function cancelCreateCategory(): void {
   categorySuccess.value = "";
 }
 
+function openDeleteConfirm(product: ProductRecord): void {
+  deleteError.value = "";
+  productToDelete.value = product;
+  showDeleteConfirm.value = true;
+}
+
+function closeDeleteConfirm(): void {
+  if (isDeletingProduct.value) {
+    return;
+  }
+  deleteError.value = "";
+  productToDelete.value = null;
+  showDeleteConfirm.value = false;
+}
+
 async function loadProducts(): Promise<void> {
   isLoadingProducts.value = true;
   try {
     products.value = await productsApi.getAll();
-  } catch {
+  } catch (error) {
     products.value = [];
+    actionError.value =
+      error instanceof Error ? error.message : "Gagal memuat product.";
   } finally {
     isLoadingProducts.value = false;
   }
@@ -590,6 +689,31 @@ async function submitCategory(): Promise<void> {
       error instanceof Error ? error.message : "Gagal membuat category.";
   } finally {
     isCreatingCategory.value = false;
+  }
+}
+
+async function confirmDeleteProduct(): Promise<void> {
+  if (!productToDelete.value) {
+    return;
+  }
+
+  deleteError.value = "";
+  actionError.value = "";
+  actionMessage.value = "";
+  isDeletingProduct.value = true;
+
+  const selected = productToDelete.value;
+  try {
+    await productsApi.delete(selected.id);
+    products.value = products.value.filter((item) => item.id !== selected.id);
+    actionMessage.value = `Product "${selected.name}" berhasil dihapus.`;
+    showDeleteConfirm.value = false;
+    productToDelete.value = null;
+  } catch (error) {
+    deleteError.value =
+      error instanceof Error ? error.message : "Gagal menghapus product.";
+  } finally {
+    isDeletingProduct.value = false;
   }
 }
 

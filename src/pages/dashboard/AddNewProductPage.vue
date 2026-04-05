@@ -1,7 +1,7 @@
 <template>
   <div>
     <DashboardNavbar
-      page-title="Add Product"
+      :page-title="pageTitle"
       search-placeholder="Search products..."
     />
 
@@ -11,11 +11,14 @@
           <h1
             class="mb-2 text-4xl font-headline font-extrabold tracking-tight text-on-surface"
           >
-            Add New Product
+            {{ isEditMode ? "Edit Product" : "Add New Product" }}
           </h1>
           <p class="max-w-3xl text-on-surface-variant">
-            Lengkapi data produk, upload gambar, lalu simpan sebagai draft atau
-            publish live.
+            {{
+              isEditMode
+                ? "Perbarui data produk, gambar, dan status publikasi dalam satu form yang sama."
+                : "Lengkapi data produk, upload gambar, lalu simpan sebagai draft atau publish live."
+            }}
           </p>
         </div>
       </div>
@@ -181,6 +184,16 @@
                   >
                     Main Cover
                   </div>
+
+                  <button
+                    v-if="coverPreview"
+                    type="button"
+                    class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-md z-20"
+                    @click.stop="deleteCoverImage"
+                    title="Delete cover image"
+                  >
+                    <span class="material-symbols-outlined text-sm">close</span>
+                  </button>
                 </button>
 
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-1">
@@ -208,6 +221,18 @@
                         Add Image
                       </p>
                     </div>
+
+                    <button
+                      v-if="galleryPreviews[index - 1]"
+                      type="button"
+                      class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-md z-20"
+                      @click.stop="deleteGalleryImage(index - 1)"
+                      title="Delete image"
+                    >
+                      <span class="material-symbols-outlined text-sm"
+                        >close</span
+                      >
+                    </button>
                   </button>
                 </div>
               </div>
@@ -217,7 +242,7 @@
                   v-for="index in 4"
                   :key="`bottom-gallery-${index}`"
                   type="button"
-                  class="group flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container-highest transition-all hover:bg-white"
+                  class="group relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container-highest transition-all hover:bg-white"
                   @click="openGalleryPicker"
                 >
                   <img
@@ -231,6 +256,16 @@
                     class="material-symbols-outlined text-slate-400 group-hover:text-primary"
                     >add</span
                   >
+
+                  <button
+                    v-if="galleryPreviews[index + 1]"
+                    type="button"
+                    class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-md z-20"
+                    @click.stop="deleteGalleryImage(index + 1)"
+                    title="Delete image"
+                  >
+                    <span class="material-symbols-outlined text-sm">close</span>
+                  </button>
                 </button>
               </div>
 
@@ -461,7 +496,13 @@
                 :disabled="isSubmitting"
                 @click="submitProduct('draft')"
               >
-                {{ isSubmitting ? "Saving..." : "Save Draft" }}
+                {{
+                  isSubmitting
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Update Draft"
+                      : "Save Draft"
+                }}
               </button>
               <button
                 type="button"
@@ -469,7 +510,13 @@
                 :disabled="isSubmitting"
                 @click="submitProduct('live')"
               >
-                {{ isSubmitting ? "Publishing..." : "Publish Product" }}
+                {{
+                  isSubmitting
+                    ? "Publishing..."
+                    : isEditMode
+                      ? "Update & Publish"
+                      : "Publish Product"
+                }}
               </button>
             </div>
           </footer>
@@ -571,7 +618,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import {
@@ -579,6 +626,7 @@ import {
   productsApi,
   type Category,
   type CreateProductPayload,
+  type ProductRecord,
   type ProductVisibility,
 } from "@/api";
 
@@ -608,18 +656,22 @@ interface AddProductDraftCache {
 }
 
 const router = useRouter();
+const route = useRoute();
 
 const LOCAL_STORAGE_DRAFT_KEY = "angpaoku:add-product:draft:v1";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_GALLERY_IMAGES = 6;
+const WIB_TIMEZONE = "Asia/Jakarta";
 
 const categories = ref<Category[]>([]);
 const coverFile = ref<File | null>(null);
 const coverPreview = ref("");
 const coverCache = ref<CachedImageDraft | null>(null);
+const existingCoverImageURL = ref("");
 const galleryFiles = ref<File[]>([]);
 const galleryPreviews = ref<string[]>([]);
 const galleryCache = ref<CachedImageDraft[]>([]);
+const existingGalleryImageURLs = ref<string[]>([]);
 const coverInputRef = ref<HTMLInputElement | null>(null);
 const galleryInputRef = ref<HTMLInputElement | null>(null);
 const discountEnabled = ref(false);
@@ -643,6 +695,21 @@ const form = reactive({
 });
 
 const discountOptions = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+const editingProductId = computed(() => {
+  const id = route.params.id;
+  return typeof id === "string" ? id.trim() : "";
+});
+
+const isEditMode = computed(() => editingProductId.value !== "");
+
+const pageTitle = computed(() =>
+  isEditMode.value ? "Edit Product" : "Add Product",
+);
+
+const draftStorageKey = computed(() =>
+  isEditMode.value ? "" : LOCAL_STORAGE_DRAFT_KEY,
+);
 
 const isValidProductLink = computed(() => {
   try {
@@ -754,6 +821,30 @@ function onDiscountToggleChange(): void {
   }
 }
 
+function deleteCoverImage(): void {
+  coverFile.value = null;
+  coverPreview.value = "";
+  coverCache.value = null;
+  existingCoverImageURL.value = "";
+  previewImageIndex.value = 0;
+}
+
+function deleteGalleryImage(index: number): void {
+  galleryFiles.value.splice(index, 1);
+  galleryCache.value.splice(index, 1);
+  galleryPreviews.value.splice(index, 1);
+  if (existingGalleryImageURLs.value.length > index) {
+    existingGalleryImageURLs.value.splice(index, 1);
+  }
+
+  if (
+    previewImageIndex.value >= previewImages.value.length &&
+    previewImageIndex.value > 0
+  ) {
+    previewImageIndex.value = previewImageIndex.value - 1;
+  }
+}
+
 function clearDiscountIfFree(): void {
   if (form.pricingType === "free") {
     discountEnabled.value = false;
@@ -837,22 +928,26 @@ function getDraftSnapshot(): AddProductDraftCache {
 }
 
 function clearDraftStorage(): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || draftStorageKey.value === "") {
     return;
   }
 
-  window.localStorage.removeItem(LOCAL_STORAGE_DRAFT_KEY);
+  window.localStorage.removeItem(draftStorageKey.value);
 }
 
 async function saveDraftToStorage(): Promise<void> {
-  if (typeof window === "undefined" || isHydratingDraft.value) {
+  if (
+    typeof window === "undefined" ||
+    isHydratingDraft.value ||
+    draftStorageKey.value === ""
+  ) {
     return;
   }
 
   try {
     const snapshot = getDraftSnapshot();
     window.localStorage.setItem(
-      LOCAL_STORAGE_DRAFT_KEY,
+      draftStorageKey.value,
       JSON.stringify(snapshot),
     );
   } catch (error) {
@@ -861,11 +956,11 @@ async function saveDraftToStorage(): Promise<void> {
 }
 
 async function restoreDraftFromStorage(): Promise<void> {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || draftStorageKey.value === "") {
     return;
   }
 
-  const raw = window.localStorage.getItem(LOCAL_STORAGE_DRAFT_KEY);
+  const raw = window.localStorage.getItem(draftStorageKey.value);
   if (!raw) {
     return;
   }
@@ -887,6 +982,8 @@ async function restoreDraftFromStorage(): Promise<void> {
 
     discountEnabled.value = Boolean(parsed.discountEnabled);
     clearDiscountIfFree();
+    existingCoverImageURL.value = "";
+    existingGalleryImageURLs.value = [];
 
     coverCache.value = parsed.coverImage ?? null;
     coverPreview.value = coverCache.value?.dataUrl ?? "";
@@ -953,9 +1050,6 @@ async function onCoverChange(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) {
-    coverFile.value = null;
-    coverPreview.value = "";
-    coverCache.value = null;
     return;
   }
 
@@ -991,10 +1085,25 @@ async function onGalleryChange(event: Event): Promise<void> {
     return;
   }
 
+  const availableSlots = Math.max(
+    MAX_GALLERY_IMAGES - galleryPreviews.value.length,
+    0,
+  );
+  if (availableSlots === 0) {
+    errorMessage.value = `Maksimal ${MAX_GALLERY_IMAGES} gambar gallery.`;
+    target.value = "";
+    return;
+  }
+
+  const selectedFiles = validFiles.slice(0, availableSlots);
+  if (validFiles.length > selectedFiles.length) {
+    errorMessage.value = `Sebagian gambar tidak ditambahkan. Maksimal ${MAX_GALLERY_IMAGES} gambar gallery.`;
+  }
+
   const nextCachedImages: CachedImageDraft[] = [];
   const nextFiles: File[] = [];
 
-  for (const file of validFiles) {
+  for (const file of selectedFiles) {
     try {
       const dataUrl = await fileToDataUrl(file);
       nextCachedImages.push(buildCachedImage(file, dataUrl));
@@ -1012,7 +1121,11 @@ async function onGalleryChange(event: Event): Promise<void> {
     0,
     MAX_GALLERY_IMAGES,
   );
-  galleryPreviews.value = galleryCache.value.map((image) => image.dataUrl);
+  const nextPreviewImages = nextCachedImages.map((image) => image.dataUrl);
+  galleryPreviews.value = [
+    ...galleryPreviews.value,
+    ...nextPreviewImages,
+  ].slice(0, MAX_GALLERY_IMAGES);
   target.value = "";
 }
 
@@ -1029,10 +1142,113 @@ async function loadCategories(): Promise<void> {
   }
 }
 
+function toWIBDateInput(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: WIB_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(date);
+}
+
+function resetFormState(): void {
+  form.name = "";
+  form.categoryId = "";
+  form.description = "";
+  form.productLink = "";
+  form.pricingType = "paid";
+  form.price = "";
+  form.discountPercentage = 0;
+  form.discountEndDate = "";
+  form.visibility = "draft";
+  form.slug = "";
+
+  discountEnabled.value = false;
+  previewImageIndex.value = 0;
+  coverFile.value = null;
+  coverPreview.value = "";
+  coverCache.value = null;
+  existingCoverImageURL.value = "";
+  galleryFiles.value = [];
+  galleryCache.value = [];
+  galleryPreviews.value = [];
+  existingGalleryImageURLs.value = [];
+}
+
+function hydrateFormFromProduct(product: ProductRecord): void {
+  form.name = product.name ?? "";
+  form.categoryId = product.category_id ?? "";
+  form.description = product.description ?? "";
+  form.productLink = product.product_link ?? "";
+  form.pricingType = product.pricing_type === "free" ? "free" : "paid";
+  form.price =
+    product.pricing_type === "free" ? "" : String(product.price ?? 0);
+  form.discountPercentage = Number(product.discount_percentage ?? 0);
+  form.discountEndDate = toWIBDateInput(product.discount_end_at);
+  form.visibility = product.visibility === "live" ? "live" : "draft";
+  form.slug = product.slug ?? "";
+
+  discountEnabled.value =
+    form.pricingType === "paid" && form.discountPercentage > 0;
+
+  existingCoverImageURL.value = product.cover_image_url ?? "";
+  coverPreview.value = existingCoverImageURL.value;
+  coverFile.value = null;
+  coverCache.value = null;
+
+  existingGalleryImageURLs.value = Array.isArray(product.gallery_images)
+    ? [...product.gallery_images]
+    : [];
+  galleryPreviews.value = existingGalleryImageURLs.value.slice(
+    0,
+    MAX_GALLERY_IMAGES,
+  );
+  galleryFiles.value = [];
+  galleryCache.value = [];
+  previewImageIndex.value = 0;
+}
+
+async function loadProductForEdit(): Promise<void> {
+  if (!isEditMode.value) {
+    return;
+  }
+
+  try {
+    const product = await productsApi.getById(editingProductId.value);
+    hydrateFormFromProduct(product);
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : "Gagal memuat data product.";
+  }
+}
+
+async function initializeFormPage(): Promise<void> {
+  errorMessage.value = "";
+  successMessage.value = "";
+  resetFormState();
+  await loadCategories();
+
+  if (isEditMode.value) {
+    await loadProductForEdit();
+    return;
+  }
+
+  await restoreDraftFromStorage();
+}
+
 async function submitProduct(visibility: ProductVisibility): Promise<void> {
   errorMessage.value = "";
   successMessage.value = "";
-  clearDraftStorage();
 
   if (form.name.trim().length < 2) {
     errorMessage.value = "Product name minimal 2 karakter.";
@@ -1087,12 +1303,22 @@ async function submitProduct(visibility: ProductVisibility): Promise<void> {
           : undefined,
       visibility,
       slug: form.slug.trim() || undefined,
+      cover_image_url: existingCoverImageURL.value || undefined,
+      gallery_image_urls:
+        existingGalleryImageURLs.value.length > 0
+          ? existingGalleryImageURLs.value
+          : undefined,
       product_cover: coverFile.value,
       gallery_images: galleryFiles.value,
     };
 
-    const product = await productsApi.create(payload);
-    successMessage.value = `Product berhasil dibuat: ${product.name}`;
+    const product = isEditMode.value
+      ? await productsApi.update(editingProductId.value, payload)
+      : await productsApi.create(payload);
+
+    successMessage.value = isEditMode.value
+      ? `Product berhasil diperbarui: ${product.name}`
+      : `Product berhasil dibuat: ${product.name}`;
     form.visibility = visibility;
     clearDraftStorage();
 
@@ -1102,7 +1328,11 @@ async function submitProduct(visibility: ProductVisibility): Promise<void> {
     }, 1500);
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : "Gagal membuat product.";
+      error instanceof Error
+        ? error.message
+        : isEditMode.value
+          ? "Gagal memperbarui product."
+          : "Gagal membuat product.";
   } finally {
     isSubmitting.value = false;
   }
@@ -1131,8 +1361,11 @@ watch(previewImageIndex, () => {
   void saveDraftToStorage();
 });
 
+watch(editingProductId, () => {
+  void initializeFormPage();
+});
+
 onMounted(async () => {
-  await restoreDraftFromStorage();
-  await loadCategories();
+  await initializeFormPage();
 });
 </script>
