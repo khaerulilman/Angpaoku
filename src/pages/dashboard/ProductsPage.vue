@@ -5,516 +5,719 @@
       search-placeholder="Search products..."
     />
 
-    <div class="p-8 w-full mx-auto">
-      <!-- Page Header -->
+    <div class="mx-auto w-full p-8">
       <div
-        class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12"
+        class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
       >
         <div>
           <h1
-            class="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2"
+            class="mb-2 text-4xl font-headline font-extrabold tracking-tight text-on-surface"
           >
             Digital Products
           </h1>
-          <p class="text-on-surface-variant max-w-md leading-relaxed">
-            Manage your digital storefront and optimize your creator revenue
-            through curated Angpao offerings.
+          <p class="max-w-2xl text-on-surface-variant">
+            Manage your digital products and categories from one dashboard.
           </p>
         </div>
-        <AppButton variant="brand" size="lg" icon="add">Add Product</AppButton>
+
+        <AppButton variant="brand" size="lg" icon="add" @click="goToAddProduct"
+          >Add Product</AppButton
+        >
       </div>
 
-      <!-- Stats -->
-      <div class="products-stats-grid mb-12">
-        <AppCard class="p-6" shadow="sm">
-          <span
-            class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/50 mb-2 block"
-            >Total Revenue</span
-          >
-          <div class="flex items-baseline gap-2">
-            <span class="text-3xl font-headline font-bold text-on-surface"
-              >$12,840.00</span
-            >
-            <span class="text-tertiary text-sm font-bold">+12%</span>
-          </div>
-        </AppCard>
-        <AppCard class="p-6" shadow="sm">
-          <span
-            class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/50 mb-2 block"
-            >Active Items</span
-          >
-          <div class="flex items-baseline gap-2">
-            <span class="text-3xl font-headline font-bold text-on-surface"
-              >24</span
-            >
-            <span class="text-on-surface-variant/60 text-sm">/ 30 slots</span>
-          </div>
-        </AppCard>
-        <AppCard class="p-6" shadow="sm">
-          <span
-            class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/50 mb-2 block"
-            >Conversion Rate</span
-          >
-          <div class="flex items-baseline gap-2">
-            <span class="text-3xl font-headline font-bold text-on-surface"
-              >8.4%</span
-            >
-            <span class="text-secondary text-sm font-bold">↑ 2.1%</span>
-          </div>
-        </AppCard>
-      </div>
+      <p v-if="actionError" class="mb-4 text-sm font-medium text-red-600">
+        {{ actionError }}
+      </p>
+      <p v-if="actionMessage" class="mb-4 text-sm font-medium text-emerald-600">
+        {{ actionMessage }}
+      </p>
 
-      <!-- Filters -->
-      <div
-        class="mb-6 flex flex-col gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4"
-      >
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div class="flex flex-wrap gap-3">
-            <div class="flex w-full flex-col gap-2 md:w-[260px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Search</span
-              >
-              <div class="relative">
-              <span
-                class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-on-surface-variant/60"
-                >search</span
+      <AppCard class="mb-6 border border-outline-variant/10 p-4" shadow="sm">
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+        >
+          <div class="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
+            <div class="space-y-2">
+              <label
+                class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Search</label
               >
               <input
                 v-model="filters.search"
                 type="text"
-                placeholder="Search products..."
-                class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Search product name..."
+                class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white px-4 text-sm font-medium text-on-surface focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
-              </div>
             </div>
 
-            <div class="flex w-full flex-col gap-2 md:w-[200px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Category</span
+            <div class="space-y-2">
+              <label
+                class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Category</label
               >
-              <div class="relative">
               <select
                 v-model="filters.category"
-                :class="[
-                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  filters.category !== 'All'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-outline-variant/20',
-                ]"
+                class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white px-4 text-sm font-medium text-on-surface focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option v-for="category in categories" :key="category">
-                  {{ category }}
+                <option value="All">All</option>
+                <option
+                  v-for="category in categories"
+                  :key="category.id"
+                  :value="category.slug"
+                >
+                  {{ category.name }}
                 </option>
               </select>
-              <span
-                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
-                >expand_more</span
-              >
-              </div>
             </div>
 
-            <div class="flex w-full flex-col gap-2 md:w-[180px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Status</span
+            <div class="space-y-2">
+              <label
+                class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >Visibility</label
               >
-              <div class="relative">
               <select
-                v-model="filters.status"
-                :class="[
-                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  filters.status !== 'All'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-outline-variant/20',
-                ]"
+                v-model="filters.visibility"
+                class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white px-4 text-sm font-medium text-on-surface focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option v-for="status in statuses" :key="status">
-                  {{ status }}
-                </option>
+                <option value="All">All</option>
+                <option value="live">Live</option>
+                <option value="draft">Draft</option>
               </select>
-              <span
-                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
-                >expand_more</span
-              >
-              </div>
-            </div>
-
-            <div class="flex w-full flex-col gap-2 md:w-[170px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Price</span
-              >
-              <div class="relative">
-              <select
-                v-model="filters.price"
-                :class="[
-                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  filters.price !== 'All'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-outline-variant/20',
-                ]"
-              >
-                <option v-for="price in prices" :key="price">
-                  {{ price }}
-                </option>
-              </select>
-              <span
-                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
-                >expand_more</span
-              >
-              </div>
-            </div>
-
-            <div class="flex w-full flex-col gap-2 md:w-[170px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Sales</span
-              >
-              <div class="relative">
-              <select
-                v-model="filters.sales"
-                :class="[
-                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  filters.sales !== 'All'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-outline-variant/20',
-                ]"
-              >
-                <option v-for="sales in salesOptions" :key="sales">
-                  {{ sales }}
-                </option>
-              </select>
-              <span
-                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
-                >expand_more</span
-              >
-              </div>
-            </div>
-
-            <div class="flex w-full flex-col gap-2 md:w-[200px]">
-              <span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
-                >Sort by</span
-              >
-              <div class="relative">
-              <select
-                v-model="filters.sort"
-                :class="[
-                  'h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-10 text-sm font-medium text-on-surface shadow-sm transition-colors hover:border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  filters.sort !== 'Newest'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-outline-variant/20',
-                ]"
-              >
-                <option v-for="sortOption in sortOptions" :key="sortOption">
-                  {{ sortOption }}
-                </option>
-              </select>
-              <span
-                class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant/70"
-                >expand_more</span
-              >
-              </div>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 md:flex-nowrap">
+          <div class="flex items-center gap-3">
             <button
-              v-if="hasActiveFilters"
+              type="button"
+              class="inline-flex h-11 items-center justify-center rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low"
               @click="resetFilters"
-              class="inline-flex h-11 items-center justify-center rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-semibold text-on-surface transition-colors hover:border-outline-variant/50 hover:bg-surface-container-low"
             >
-              Reset Filters
+              Reset
             </button>
             <button
-              class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-bold text-on-surface transition-colors hover:border-outline-variant/50 hover:bg-surface-container-low"
+              type="button"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-bold text-on-surface hover:bg-surface-container-low"
+              @click="showCreateCategoryCard = !showCreateCategoryCard"
             >
               <span class="material-symbols-outlined text-lg">add</span>
               Add Category
             </button>
           </div>
         </div>
-      </div>
+      </AppCard>
 
-      <!-- Products Table -->
       <AppCard
+        v-if="showCreateCategoryCard"
+        class="mb-6 border border-primary/20 p-6"
         shadow="sm"
-        class="overflow-hidden border border-outline-variant/5"
       >
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+        <h2 class="mb-4 text-lg font-headline font-bold text-on-surface">
+          Create Category
+        </h2>
+
+        <form
+          class="grid grid-cols-1 gap-4 md:grid-cols-3"
+          @submit.prevent="submitCategory"
+        >
+          <div class="space-y-2 md:col-span-1">
+            <label
+              class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+              >Category Name</label
+            >
+            <input
+              v-model.trim="categoryForm.name"
+              type="text"
+              placeholder="Digital Asset"
+              class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white px-4 text-sm font-medium text-on-surface focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div class="space-y-2 md:col-span-1">
+            <label
+              class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+              >Slug (Optional)</label
+            >
+            <input
+              v-model.trim="categoryForm.slug"
+              type="text"
+              placeholder="digital-asset"
+              class="h-11 w-full rounded-xl border border-outline-variant/20 bg-white px-4 text-sm font-medium text-on-surface focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div class="flex items-end gap-3 md:col-span-1">
+            <button
+              type="submit"
+              :disabled="isCreatingCategory"
+              class="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ isCreatingCategory ? "Creating..." : "Create Category" }}
+            </button>
+            <button
+              type="button"
+              :disabled="isCreatingCategory"
+              class="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60"
+              @click="cancelCreateCategory"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+
+        <p v-if="categoryError" class="mt-3 text-sm font-medium text-red-600">
+          {{ categoryError }}
+        </p>
+        <p
+          v-if="categorySuccess"
+          class="mt-3 text-sm font-medium text-emerald-600"
+        >
+          {{ categorySuccess }}
+        </p>
+      </AppCard>
+
+      <AppCard
+        class="overflow-hidden border border-outline-variant/10"
+        shadow="sm"
+      >
+        <div v-if="isLoadingProducts" class="overflow-x-auto">
+          <table class="w-full border-collapse text-left">
             <thead>
               <tr class="bg-surface-container-low/50">
                 <th
-                  class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
-                  Product Details
+                  Image
                 </th>
                 <th
-                  class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
-                  Price ($)
+                  Name
                 </th>
                 <th
-                  class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60"
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
-                  Sales
+                  Category
                 </th>
                 <th
-                  class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60 text-center"
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
-                  Status
+                  Price
                 </th>
-                <th class="px-8 py-5"></th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Discount
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Final Price
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Type
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Visibility
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-surface-container-low">
               <tr
-                v-for="product in products"
-                :key="product.id"
-                class="group hover:bg-surface-container-low/30 transition-colors"
+                v-for="index in 6"
+                :key="`skeleton-${index}`"
+                class="hover:bg-surface-container-low/30"
               >
-                <td class="px-8 py-6">
-                  <div class="flex items-center gap-4">
+                <td class="px-6 py-4">
+                  <div
+                    class="h-14 w-14 rounded-lg bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="space-y-2">
                     <div
-                      class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden flex-shrink-0"
-                    >
-                      <img
-                        v-if="product.image"
-                        :src="product.image"
-                        alt="Product"
-                        :class="[
-                          'w-full h-full object-cover group-hover:scale-110 transition-transform duration-500',
-                          product.status === 'draft' ? 'opacity-60' : '',
-                        ]"
-                      />
-                    </div>
-                    <div>
-                      <p
-                        :class="[
-                          'font-headline font-bold group-hover:text-primary transition-colors',
-                          product.status === 'draft'
-                            ? 'text-on-surface/60'
-                            : 'text-on-surface',
-                        ]"
-                      >
-                        {{ product.name }}
-                      </p>
-                      <p
-                        :class="[
-                          'text-xs font-medium',
-                          product.status === 'draft'
-                            ? 'text-on-surface-variant/60'
-                            : 'text-on-surface-variant',
-                        ]"
-                      >
-                        {{ product.type }} • {{ product.fileSize }}
-                      </p>
-                    </div>
+                      class="h-4 w-32 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                    <div
+                      class="h-3 w-24 rounded bg-surface-container-high animate-pulse"
+                    ></div>
                   </div>
                 </td>
-                <td class="px-8 py-6">
-                  <span
-                    :class="[
-                      'font-headline font-semibold',
-                      product.status === 'draft'
-                        ? 'text-on-surface/60'
-                        : 'text-on-surface',
-                    ]"
-                  >
-                    {{ product.price }}
-                  </span>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-20 rounded bg-surface-container-high animate-pulse"
+                  ></div>
                 </td>
-                <td class="px-8 py-6">
-                  <div class="flex flex-col">
-                    <span
-                      :class="[
-                        'font-bold',
-                        product.status === 'draft'
-                          ? 'text-on-surface/60'
-                          : 'text-on-surface',
-                      ]"
-                    >
-                      {{ product.sales.toLocaleString() }}
-                    </span>
-                    <span
-                      v-if="product.isTopSeller"
-                      class="text-[10px] text-tertiary font-bold"
-                      >TOP SELLER</span
-                    >
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-24 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-12 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-24 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-16 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-8 w-16 rounded-full bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex gap-2">
+                    <div
+                      class="h-8 w-8 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                    <div
+                      class="h-8 w-8 rounded bg-surface-container-high animate-pulse"
+                    ></div>
                   </div>
-                </td>
-                <td class="px-8 py-6">
-                  <div class="flex justify-center">
-                    <span
-                      :class="[
-                        'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                        product.status === 'active'
-                          ? 'bg-secondary-container text-on-secondary-container'
-                          : 'bg-surface-container-high text-on-surface-variant',
-                      ]"
-                    >
-                      {{ product.status }}
-                    </span>
-                  </div>
-                </td>
-                <td class="px-8 py-6 text-right">
-                  <button
-                    class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors"
-                  >
-                    more_vert
-                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Pagination -->
-        <div
-          class="px-8 py-4 bg-surface-container-low/20 flex items-center justify-between border-t border-outline-variant/5"
-        >
-          <span class="text-xs text-on-surface-variant font-medium"
-            >Showing 4 of 24 products</span
+        <div v-else class="overflow-x-auto">
+          <table class="w-full border-collapse text-left">
+            <thead>
+              <tr class="bg-surface-container-low/50">
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Image
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Name
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Category
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Price
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Discount
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Final Price
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Type
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Visibility
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-container-low">
+              <tr
+                v-for="product in filteredProducts"
+                :key="product.id"
+                class="hover:bg-surface-container-low/30"
+              >
+                <td class="px-6 py-4">
+                  <div
+                    class="h-14 w-14 overflow-hidden rounded-lg bg-surface-container-high"
+                  >
+                    <img
+                      v-if="product.cover_image_url"
+                      :src="product.cover_image_url"
+                      :alt="`${product.name} cover`"
+                      class="h-full w-full object-cover"
+                    />
+                    <div
+                      v-else
+                      class="flex h-full w-full items-center justify-center text-[10px] font-bold text-on-surface-variant"
+                    >
+                      No Image
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="font-semibold text-on-surface">
+                    {{ product.name }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-on-surface">
+                  {{ product.category?.name ?? "-" }}
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold text-on-surface">
+                  {{ formatIDR(product.price) }}
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold text-on-surface">
+                  {{
+                    product.discount_percentage > 0
+                      ? `${product.discount_percentage}%`
+                      : "-"
+                  }}
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold">
+                  <span
+                    :class="
+                      product.pricing_type === 'free'
+                        ? 'text-emerald-600'
+                        : 'text-primary'
+                    "
+                  >
+                    {{
+                      product.pricing_type === "free"
+                        ? "FREE"
+                        : formatIDR(getFinalPrice(product))
+                    }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm uppercase text-on-surface">
+                  {{ product.pricing_type }}
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    :class="[
+                      'rounded-full px-3 py-1 text-xs font-bold uppercase',
+                      product.visibility === 'live'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-600',
+                    ]"
+                  >
+                    {{ product.visibility }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      title="Edit product"
+                      @click="goToEditProduct(product)"
+                    >
+                      <span class="material-symbols-outlined text-lg"
+                        >edit</span
+                      >
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="isDeletingProduct"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      :class="
+                        isDeletingProduct
+                          ? 'cursor-not-allowed opacity-60'
+                          : ''
+                      "
+                      title="Delete product"
+                      @click="openDeleteConfirm(product)"
+                    >
+                      <span class="material-symbols-outlined text-lg"
+                        >delete</span
+                      >
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div
+            v-if="filteredProducts.length === 0"
+            class="p-6 text-sm text-on-surface-variant"
           >
-          <div class="flex gap-2">
-            <button
-              class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-lowest border border-outline-variant/10 text-on-surface-variant hover:bg-white transition-all"
-            >
-              <span class="material-symbols-outlined text-sm"
-                >chevron_left</span
-              >
-            </button>
-            <button
-              class="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-on-primary text-xs font-bold"
-            >
-              1
-            </button>
-            <button
-              class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-lowest border border-outline-variant/10 text-on-surface-variant hover:bg-white transition-all text-xs font-bold"
-            >
-              2
-            </button>
-            <button
-              class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-lowest border border-outline-variant/10 text-on-surface-variant hover:bg-white transition-all"
-            >
-              <span class="material-symbols-outlined text-sm"
-                >chevron_right</span
-              >
-            </button>
+            No products found.
           </div>
         </div>
       </AppCard>
+    </div>
+
+    <div
+      v-if="showDeleteConfirm && productToDelete"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[1px]"
+      @click.self="closeDeleteConfirm"
+    >
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mb-4 flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600"
+          >
+            <span class="material-symbols-outlined">delete</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-on-surface">Delete Product</h3>
+            <p class="text-xs text-on-surface-variant">Confirmation Flow</p>
+          </div>
+        </div>
+
+        <div
+          class="mb-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4"
+        >
+          <p class="text-sm font-semibold text-on-surface">
+            {{ productToDelete.name }}
+          </p>
+          <p class="mt-1 text-xs text-on-surface-variant">
+            1. Pastikan produk yang dipilih sudah benar.
+          </p>
+          <p class="text-xs text-on-surface-variant">
+            2. Klik tombol delete untuk menghapus permanen.
+          </p>
+        </div>
+
+        <p v-if="deleteError" class="mb-4 text-sm font-medium text-red-600">
+          {{ deleteError }}
+        </p>
+
+        <div class="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-outline-variant/30 px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isDeletingProduct"
+            @click="closeDeleteConfirm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="isDeletingProduct"
+            @click="confirmDeleteProduct"
+          >
+            {{ isDeletingProduct ? "Deleting..." : "Delete Product" }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import AppButton from "@/components/common/AppButton.vue";
-import type { Product } from "@/types";
-import { computed, ref } from "vue";
+import {
+  categoriesApi,
+  productsApi,
+  type Category,
+  type ProductRecord,
+} from "@/api";
 
-const categories = [
-  "All",
-  "Digital Art",
-  "Video Course",
-  "E-book",
-  "Templates",
-];
+const router = useRouter();
 
-const statuses = ["All", "Active", "Inactive", "Draft"];
-const prices = ["All", "$0 - $10", "$10 - $50", "$50+"];
-const salesOptions = ["All", "Top Selling", "Low Sales", "No Sales"];
-const sortOptions = [
-  "Newest",
-  "Oldest",
-  "Price: Low to High",
-  "Price: High to Low",
-  "Most Sales",
-];
+const isLoadingProducts = ref(false);
+const isCreatingCategory = ref(false);
+const isDeletingProduct = ref(false);
+const showDeleteConfirm = ref(false);
+const categoryError = ref("");
+const categorySuccess = ref("");
+const actionError = ref("");
+const actionMessage = ref("");
+const deleteError = ref("");
+const showCreateCategoryCard = ref(false);
+
+const products = ref<ProductRecord[]>([]);
+const categories = ref<Category[]>([]);
+const productToDelete = ref<ProductRecord | null>(null);
 
 const filters = ref({
-  category: "All",
-  status: "All",
-  price: "All",
-  sales: "All",
-  sort: "Newest",
   search: "",
+  category: "All",
+  visibility: "All",
 });
 
-const hasActiveFilters = computed(() => {
-  return (
-    filters.value.category !== "All" ||
-    filters.value.status !== "All" ||
-    filters.value.price !== "All" ||
-    filters.value.sales !== "All" ||
-    filters.value.sort !== "Newest" ||
-    filters.value.search.trim() !== ""
-  );
+const categoryForm = ref({
+  name: "",
+  slug: "",
 });
 
-const resetFilters = () => {
-  filters.value = {
-    category: "All",
-    status: "All",
-    price: "All",
-    sales: "All",
-    sort: "Newest",
-    search: "",
-  };
-};
+const filteredProducts = computed(() => {
+  return products.value.filter((product) => {
+    const bySearch =
+      filters.value.search.trim() === "" ||
+      product.name
+        .toLowerCase()
+        .includes(filters.value.search.trim().toLowerCase());
 
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Exclusive Wallpapers Pack",
-    type: "Digital Art",
-    fileSize: "42 MB",
-    price: "$15.00",
-    sales: 1204,
-    status: "active",
-    isTopSeller: true,
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAHP4_fXGzMWttSgWKslFkcLVmp4HSitpwW4h9t__XNHNBpDO_6Ch_IZ9R9zpCmv-JDcz4slkFP1mhcEq0N-OcX-dCZ0iksZrfDMtO6KgF6j3q2fYCpEjR7Bhe_owgft0d55HVj6MZU06a38-INSZUtq291moFppWhtU7ZPD9bfzqKqcKiRt571Py8_yBQF1a6AMMo9bRCJ55MCZB3QRVRfRTigJpCRyn7W1HCLQq6R38A63rhSr_345_1bKEpVuRFMFbNsHhZrHKE",
-  },
-  {
-    id: "2",
-    name: "Creator Masterclass Vol 1",
-    type: "Video Course",
-    fileSize: "2.4 GB",
-    price: "$49.00",
-    sales: 352,
-    status: "active",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBzgSvf9-A3nlckSvGMQo9Wi9Exr7jdQzeSHWPUbatvaTe5RaG-bvI-8HCGCVuGhemDNo-IOps0Tpel3afJIb605QEk0fXIgJxJYBVBmkazFaNrzbgnFX6KdMWy7KfRPz_1_KudArxeRmttef1hyGg9CbbavpYf2d-e4t6T0uQePFrFyHF1UVFmLATEAz3y-f7U6ZQD_bSUbkoOu3dQaFq81YQno9dKoJMSTcGr-2m126nxNmweDUjoypeHC4JwKZWmB4OoDl57Bjw",
-  },
-  {
-    id: "3",
-    name: "Lightroom Presets - Autumn",
-    type: "Assets",
-    fileSize: "15 MB",
-    price: "$12.00",
-    sales: 0,
-    status: "draft",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDtKxE6YXh5EWOTHZqzlDsTxWDrHob6F4M8ujX1rDh6JFIQ2MxrDPV6bbU8voXYfDjR1U4QDteUr5nLeq3JYDpWdg16m8RB4-ObQqzUWMNX7ryXwITj4IwAo5Nk9oQ-ut3-stenZZysq0rPqwo9e7R183IN0rx-AZyoqC9xAD4JhkRpsuXCHxm2yxMZpkvDXUv0iAYjgO8Y9JY1iS8Udc8BKMmHbphmo6TmLo06bqHGHO47VVl1o9j6iunNKpdsVORrmIobKH3btnA",
-  },
-  {
-    id: "4",
-    name: "1-on-1 Consulting Session",
-    type: "Service",
-    fileSize: "1 Hour",
-    price: "$150.00",
-    sales: 18,
-    status: "active",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuA4jjIV5XziAzGH0rIvEQldR1WtNFwh2bJ3_oHMRpraxaS3B3TAwQq3QgaAYcesnQzj-DApfnCCqWZ1k44txjiIqBafAvzjhP9ijzMXuohEcr3CahSCHEcE27fd4Le1lAlDRxhdaf5ZJEN0-XS4TRZkFcRxRoo_v9hzZoMAmun78gniKGFBkzuF8auz0Y8LBeYVmHdBkNonCyLlK4Fe29Zu0JTKCmdQBqtukAztb1D7OsfV4fcc4tQ6wViDTn29IkOsUmvzSkpNm9w",
-  },
-];
-</script>
+    const byCategory =
+      filters.value.category === "All" ||
+      product.category?.slug === filters.value.category;
 
-<style scoped>
-.products-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+    const byVisibility =
+      filters.value.visibility === "All" ||
+      product.visibility === filters.value.visibility;
+
+    return bySearch && byCategory && byVisibility;
+  });
+});
+
+function formatIDR(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
-</style>
+
+function resetFilters(): void {
+  filters.value = {
+    search: "",
+    category: "All",
+    visibility: "All",
+  };
+}
+
+function goToAddProduct(): void {
+  router.push({ name: "add-product" });
+}
+
+function goToEditProduct(product: ProductRecord): void {
+  router.push({ name: "edit-product", params: { id: product.id } });
+}
+
+function getFinalPrice(product: ProductRecord): number {
+  if (product.pricing_type === "free") {
+    return 0;
+  }
+
+  if (product.discount_percentage <= 0) {
+    return product.price;
+  }
+
+  const discounted = Math.round(
+    (product.price * (100 - product.discount_percentage)) / 100,
+  );
+  return Math.max(discounted, 0);
+}
+
+function cancelCreateCategory(): void {
+  showCreateCategoryCard.value = false;
+  categoryForm.value = { name: "", slug: "" };
+  categoryError.value = "";
+  categorySuccess.value = "";
+}
+
+function openDeleteConfirm(product: ProductRecord): void {
+  deleteError.value = "";
+  productToDelete.value = product;
+  showDeleteConfirm.value = true;
+}
+
+function closeDeleteConfirm(): void {
+  if (isDeletingProduct.value) {
+    return;
+  }
+  deleteError.value = "";
+  productToDelete.value = null;
+  showDeleteConfirm.value = false;
+}
+
+async function loadProducts(): Promise<void> {
+  isLoadingProducts.value = true;
+  try {
+    products.value = await productsApi.getAll();
+  } catch (error) {
+    products.value = [];
+    actionError.value =
+      error instanceof Error ? error.message : "Gagal memuat product.";
+  } finally {
+    isLoadingProducts.value = false;
+  }
+}
+
+async function loadCategories(): Promise<void> {
+  try {
+    categories.value = await categoriesApi.getAll();
+  } catch {
+    categories.value = [];
+  }
+}
+
+async function submitCategory(): Promise<void> {
+  categoryError.value = "";
+  categorySuccess.value = "";
+
+  if (categoryForm.value.name.trim().length < 2) {
+    categoryError.value = "Category name minimum 2 karakter.";
+    return;
+  }
+
+  isCreatingCategory.value = true;
+  try {
+    const created = await categoriesApi.create({
+      name: categoryForm.value.name.trim(),
+      slug: categoryForm.value.slug.trim() || undefined,
+    });
+
+    categories.value = [created, ...categories.value];
+    categoryForm.value = { name: "", slug: "" };
+    categorySuccess.value = "Category berhasil dibuat.";
+  } catch (error) {
+    categoryError.value =
+      error instanceof Error ? error.message : "Gagal membuat category.";
+  } finally {
+    isCreatingCategory.value = false;
+  }
+}
+
+async function confirmDeleteProduct(): Promise<void> {
+  if (!productToDelete.value) {
+    return;
+  }
+
+  deleteError.value = "";
+  actionError.value = "";
+  actionMessage.value = "";
+  isDeletingProduct.value = true;
+
+  const selected = productToDelete.value;
+  try {
+    await productsApi.delete(selected.id);
+    products.value = products.value.filter((item) => item.id !== selected.id);
+    actionMessage.value = `Product "${selected.name}" berhasil dihapus.`;
+    showDeleteConfirm.value = false;
+    productToDelete.value = null;
+  } catch (error) {
+    deleteError.value =
+      error instanceof Error ? error.message : "Gagal menghapus product.";
+  } finally {
+    isDeletingProduct.value = false;
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadCategories(), loadProducts()]);
+});
+</script>

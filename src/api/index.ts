@@ -4,7 +4,6 @@ import type {
   DashboardStats,
   Donation,
   OverlaySettings,
-  Product,
   Transaction,
 } from '@/types'
 
@@ -80,6 +79,105 @@ export interface LoginPayload {
   password: string
 }
 
+export interface Category {
+  id: string
+  user_id: string
+  name: string
+  slug: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateCategoryPayload {
+  name: string
+  slug?: string
+}
+
+export type ProductPricingType = 'paid' | 'free'
+export type ProductVisibility = 'draft' | 'live'
+
+export interface ProductRecord {
+  id: string
+  user_id: string
+  category_id: string | null
+  name: string
+  description: string
+  product_link: string
+  link_verified: boolean
+  discount_percentage: number
+  discount_end_at: string | null
+  cover_image_url: string
+  gallery_images: string[]
+  pricing_type: ProductPricingType
+  price: number
+  visibility: ProductVisibility
+  slug: string
+  created_at: string
+  updated_at: string
+  category?: Category
+}
+
+export interface CreateProductPayload {
+  name: string
+  category_id: string
+  description: string
+  product_link: string
+  link_verified: boolean
+  discount_percentage: number
+  discount_end_date?: string
+  pricing_type: ProductPricingType
+  price: number
+  visibility: ProductVisibility
+  slug?: string
+  cover_image_url?: string
+  gallery_image_urls?: string[]
+  product_cover?: File | null
+  gallery_images?: File[]
+}
+
+function buildProductFormData(payload: CreateProductPayload): FormData {
+  const formData = new FormData()
+  formData.append('name', payload.name)
+  formData.append('category_id', payload.category_id)
+  formData.append('description', payload.description)
+  formData.append('product_link', payload.product_link)
+  formData.append('link_verified', String(payload.link_verified))
+  formData.append('discount_percentage', String(payload.discount_percentage))
+  formData.append('pricing_type', payload.pricing_type)
+  formData.append('price', String(payload.price))
+  formData.append('visibility', payload.visibility)
+
+  if (payload.slug) {
+    formData.append('slug', payload.slug)
+  }
+
+  if (payload.discount_end_date) {
+    formData.append('discount_end_date', payload.discount_end_date)
+  }
+
+  if (payload.cover_image_url) {
+    formData.append('cover_image_url', payload.cover_image_url)
+  }
+
+  if (payload.gallery_image_urls && payload.gallery_image_urls.length > 0) {
+    payload.gallery_image_urls.forEach((url) => {
+      formData.append('gallery_image_urls', url)
+    })
+  }
+
+  if (payload.product_cover) {
+    formData.append('product_cover', payload.product_cover)
+  }
+
+  if (payload.gallery_images && payload.gallery_images.length > 0) {
+    payload.gallery_images.forEach((file) => {
+      formData.append('gallery_images', file)
+    })
+  }
+
+  return formData
+}
+
 export const authApi = {
   async register(payload: RegisterPayload): Promise<AuthUser> {
     try {
@@ -146,17 +244,85 @@ export const transactionsApi = {
   exportCsv: async (): Promise<Blob> => notImplemented('transactionsApi.exportCsv'),
 }
 
+// ---- Categories ----
+export const categoriesApi = {
+  async getAll(): Promise<Category[]> {
+    try {
+      const response = await apiClient.get<ApiEnvelope<{ categories: Category[] }>>('/categories')
+      return unwrapData(response.data).categories ?? []
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to load categories'))
+    }
+  },
+
+  async create(payload: CreateCategoryPayload): Promise<Category> {
+    try {
+      const response = await apiClient.post<ApiEnvelope<{ category: Category }>>('/categories', payload)
+      return unwrapData(response.data).category
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to create category'))
+    }
+  },
+}
+
 // ---- Products ----
 export const productsApi = {
-  getAll: async (_params?: { page?: number; limit?: number }): Promise<{
-    data: Product[]
-    total: number
-  }> => notImplemented('productsApi.getAll'),
-  getById: async (_id: string): Promise<Product> => notImplemented('productsApi.getById'),
-  create: async (_payload: Partial<Product>): Promise<Product> => notImplemented('productsApi.create'),
-  update: async (_id: string, _payload: Partial<Product>): Promise<Product> =>
-    notImplemented('productsApi.update'),
-  delete: async (_id: string): Promise<void> => notImplemented('productsApi.delete'),
+  async getAll(): Promise<ProductRecord[]> {
+    try {
+      const response = await apiClient.get<ApiEnvelope<{ products: ProductRecord[] }>>('/products')
+      return unwrapData(response.data).products ?? []
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to load products'))
+    }
+  },
+
+  async getById(id: string): Promise<ProductRecord> {
+    try {
+      const response = await apiClient.get<ApiEnvelope<{ product: ProductRecord }>>(`/products/${id}`)
+      return unwrapData(response.data).product
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to load product'))
+    }
+  },
+
+  async create(payload: CreateProductPayload): Promise<ProductRecord> {
+    try {
+      const formData = buildProductFormData(payload)
+
+      const response = await apiClient.post<ApiEnvelope<{ product: ProductRecord }>>('/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      return unwrapData(response.data).product
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to create product'))
+    }
+  },
+
+  async update(id: string, payload: CreateProductPayload): Promise<ProductRecord> {
+    try {
+      const formData = buildProductFormData(payload)
+      const response = await apiClient.put<ApiEnvelope<{ product: ProductRecord }>>(`/products/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      return unwrapData(response.data).product
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to update product'))
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`/products/${id}`)
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, 'failed to delete product'))
+    }
+  },
 }
 
 // ---- Points / Donations ----
@@ -191,4 +357,6 @@ export const withdrawApi = {
   getHistory: async (): Promise<Record<string, unknown>[]> => notImplemented('withdrawApi.getHistory'),
   request: async (_amount: number, _method: string): Promise<void> => notImplemented('withdrawApi.request'),
 }
+
+
 

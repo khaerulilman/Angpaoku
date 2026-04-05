@@ -26,6 +26,14 @@ const router = createRouter({
       ],
     },
 
+    // ---- Store Preview (Public) ----
+    {
+      path: "/store-preview",
+      name: "store-preview",
+      component: () => import("@/pages/StorePreviewPage.vue"),
+      meta: { title: "Store Preview | Angpaoku" },
+    },
+
     // ---- Dashboard (Creator Portal) ----
     {
       path: "/dashboard",
@@ -43,6 +51,18 @@ const router = createRouter({
           name: "products",
           component: () => import("@/pages/dashboard/ProductsPage.vue"),
           meta: { title: "Products | Angpaoku Dashboard" },
+        },
+        {
+          path: "add-product",
+          name: "add-product",
+          component: () => import("@/pages/dashboard/AddNewProductPage.vue"),
+          meta: { title: "Add New Product | Angpaoku Dashboard" },
+        },
+        {
+          path: "products/:id/edit",
+          name: "edit-product",
+          component: () => import("@/pages/dashboard/AddNewProductPage.vue"),
+          meta: { title: "Edit Product | Angpaoku Dashboard" },
         },
         {
           path: "transactions",
@@ -73,6 +93,12 @@ const router = createRouter({
           name: "withdraw",
           component: () => import("@/pages/dashboard/WithdrawPage.vue"),
           meta: { title: "Withdraw | Angpaoku Dashboard" },
+        },
+        {
+          path: "profile",
+          name: "profile",
+          component: () => import("@/pages/dashboard/ProfilePage.vue"),
+          meta: { title: "Profile | Angpaoku Dashboard" },
         },
       ],
     },
