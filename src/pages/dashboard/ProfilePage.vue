@@ -24,11 +24,32 @@
 
       <div class="grid grid-cols-1 gap-8 xl:grid-cols-12">
         <div class="space-y-6 xl:col-span-4">
-          <AppCard class="p-8" shadow="sm">
-            <div class="flex flex-col items-center text-center">
-              <div class="relative mb-6">
+          <AppCard class="overflow-hidden" shadow="sm">
+            <!-- Banner Image -->
+            <div class="relative h-48 w-full">
+              <img
+                class="h-full w-full object-cover"
+                src="https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1200&h=300&fit=crop"
+                alt="Profile banner"
+              />
+              <div
+                class="absolute inset-0 bg-gradient-to-b from-black/0 to-black/20"
+              ></div>
+              <button
+                class="absolute right-4 top-4 rounded-full border border-outline-variant/20 bg-white/90 p-2 text-primary shadow-sm transition-transform hover:scale-110"
+                type="button"
+              >
+                <span class="material-symbols-outlined text-sm"
+                  >photo_camera</span
+                >
+              </button>
+            </div>
+
+            <!-- Profile Content -->
+            <div class="flex flex-col items-center px-8 pb-8 pt-0 text-center">
+              <div class="relative -mt-20 mb-6">
                 <div
-                  class="h-32 w-32 overflow-hidden rounded-full border-4 border-primary-fixed-dim"
+                  class="h-40 w-40 overflow-hidden rounded-full border-4 border-primary-fixed-dim bg-white"
                 >
                   <img
                     class="h-full w-full object-cover"
@@ -37,7 +58,7 @@
                   />
                 </div>
                 <button
-                  class="absolute bottom-1 right-1 rounded-full border border-outline-variant/20 bg-white p-2 text-primary shadow-sm transition-transform hover:scale-110"
+                  class="absolute bottom-2 right-2 rounded-full border border-outline-variant/20 bg-white p-2 text-primary shadow-sm transition-transform hover:scale-110"
                   type="button"
                 >
                   <span class="material-symbols-outlined text-sm"
