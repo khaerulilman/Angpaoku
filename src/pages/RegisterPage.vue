@@ -23,15 +23,15 @@
         </header>
         <form class="space-y-5" @submit.prevent="handleRegister">
           <div class="space-y-1.5">
-            <label class="font-label text-sm font-semibold text-on-surface-variant" for="name">Full Name</label>
+            <label class="font-label text-sm font-semibold text-on-surface-variant" for="username">Username</label>
             <div class="relative group">
               <input
-                id="name"
-                name="name"
+                id="username"
+                name="username"
                 type="text"
-                placeholder="Enter your full name"
-                autocomplete="name"
-                v-model.trim="form.name"
+                placeholder="Enter your username"
+                autocomplete="username"
+                v-model.trim="form.username"
                 required
                 class="w-full px-4 py-3 bg-surface-container-highest border-none rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-secondary/10 focus:bg-surface-container-lowest transition-all duration-200 outline-none"
               />
@@ -194,7 +194,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const form = reactive({
-  name: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -220,7 +220,7 @@ async function handleRegister() {
   isSubmitting.value = true
   try {
     await authStore.register({
-      name: form.name,
+      username: form.username,
       email: form.email,
       password: form.password,
     })
@@ -233,3 +233,4 @@ async function handleRegister() {
   }
 }
 </script>
+

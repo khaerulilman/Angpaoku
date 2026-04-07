@@ -39,12 +39,12 @@
             class="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
           >
             <AppAvatar
-              :src="`https://ui-avatars.com/api/?name=${authStore.user?.name}`"
+              :src="`https://ui-avatars.com/api/?name=${displayName}`"
               size="sm"
             />
             <div>
               <p class="text-sm font-bold text-on-surface">
-                {{ authStore.user?.name }}
+                {{ displayName }}
               </p>
             </div>
           </router-link>
@@ -70,13 +70,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRouter } from "vue-router";
 import AppButton from "@/components/common/AppButton.vue";
 import AppAvatar from "@/components/common/AppAvatar.vue";
 import { useAuthStore } from "@/stores/auth";
-import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const displayName = computed(() => {
+  const fullName = authStore.user?.full_name?.trim() ?? "";
+  if (fullName !== "") {
+    return fullName;
+  }
+
+  return authStore.user?.username ?? "";
+});
 
 const navLinks = [
   { label: "Features", href: "#features", active: true },

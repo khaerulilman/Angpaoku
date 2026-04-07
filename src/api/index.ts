@@ -1,362 +1,633 @@
-import axios from 'axios'
+﻿import axios from "axios";
 import type {
   ActivityItem,
   DashboardStats,
   Donation,
   OverlaySettings,
   Transaction,
-} from '@/types'
+} from "@/types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const READ_BASE_URL = import.meta.env.VITE_READ_API_BASE_URL;
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-})
+});
+
+const readApiClient = axios.create({
+  baseURL: READ_BASE_URL,
+  withCredentials: false,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 interface ApiEnvelope<T> {
-  success: boolean
-  message: string
-  data: T
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface ReadEnvelope<T> {
+  data: T;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === "object" && value !== null;
 }
 
-function extractApiErrorMessage(error: unknown, fallbackMessage: string): string {
+function extractApiErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+): string {
   if (!isObject(error)) {
-    return fallbackMessage
+    return fallbackMessage;
   }
 
-  const response = error.response
+  const response = error.response;
   if (!isObject(response)) {
-    return fallbackMessage
+    return fallbackMessage;
   }
 
-  const payload = response.data
+  const payload = response.data;
   if (!isObject(payload)) {
-    return fallbackMessage
+    return fallbackMessage;
   }
 
-  const message = payload.message
-  if (typeof message === 'string' && message.trim() !== '') {
-    return message
+  const message = payload.message;
+  if (typeof message === "string" && message.trim() !== "") {
+    return message;
   }
 
-  return fallbackMessage
+  const errorMessage = payload.error;
+  if (typeof errorMessage === "string" && errorMessage.trim() !== "") {
+    return errorMessage;
+  }
+
+  return fallbackMessage;
 }
 
 function unwrapData<T>(payload: ApiEnvelope<T>): T {
-  return payload.data
+  return payload.data;
 }
 
 export interface AuthUser {
-  id: string
-  name: string
-  email: string
-  created_at: string
-  updated_at: string
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  phone_number?: string | null;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LoginResponse {
-  access_expires_at: string
-  refresh_expires_at: string
-  user: AuthUser
+  access_expires_at: string;
+  refresh_expires_at: string;
+  user: AuthUser;
 }
 
 export interface RegisterPayload {
-  name: string
-  email: string
-  password: string
+  username: string;
+  full_name?: string;
+  email: string;
+  password: string;
 }
 
+
+export interface ProfileRecord {
+  id: string;
+  user_id: string;
+  bio?: string | null;
+  tagline?: string | null;
+  location?: string | null;
+  profile_photo?: string | null;
+  banner_photo?: string | null;
+  website?: string | null;
+  youtube_url?: string | null;
+  instagram_username?: string | null;
+  tiktok_username?: string | null;
+  x_username?: string | null;
+  discord_link?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfileResponse {
+  user: AuthUser;
+  profile: ProfileRecord;
+}
+
+export type ProfileEditableField =
+  | "phone_number"
+  | "bio"
+  | "tagline"
+  | "location"
+  | "website"
+  | "youtube_url"
+  | "instagram_username"
+  | "tiktok_username"
+  | "x_username"
+  | "discord_link";
+
+export interface UpdateProfileFieldPayload {
+  field: ProfileEditableField;
+  value: string;
+}
+
+export type ProfileImageField = "profile_photo" | "banner_photo";
+
 export interface LoginPayload {
-  email: string
-  password: string
+  email: string;
+  password: string;
 }
 
 export interface Category {
-  id: string
-  user_id: string
-  name: string
-  slug: string
-  created_at: string
-  updated_at: string
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateCategoryPayload {
-  name: string
-  slug?: string
+  name: string;
+  slug?: string;
 }
 
-export type ProductPricingType = 'paid' | 'free'
-export type ProductVisibility = 'draft' | 'live'
+export type ProductPricingType = "paid" | "free";
+export type ProductVisibility = "draft" | "live";
 
 export interface ProductRecord {
-  id: string
-  user_id: string
-  category_id: string | null
-  name: string
-  description: string
-  product_link: string
-  link_verified: boolean
-  discount_percentage: number
-  discount_end_at: string | null
-  cover_image_url: string
-  gallery_images: string[]
-  pricing_type: ProductPricingType
-  price: number
-  visibility: ProductVisibility
-  slug: string
-  created_at: string
-  updated_at: string
-  category?: Category
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  name: string;
+  description: string;
+  product_link: string;
+  link_verified: boolean;
+  discount_percentage: number;
+  discount_end_at: string | null;
+  cover_image_url: string;
+  gallery_images: string[];
+  pricing_type: ProductPricingType;
+  price: number;
+  visibility: ProductVisibility;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+  category?: Category;
+}
+
+export interface StorePreviewProfile {
+  name: string;
+}
+
+export interface StorePreviewData {
+  user_id: string;
+  profile: StorePreviewProfile;
+  products: ProductRecord[];
+}
+
+interface ReadPublicProduct {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  price: number;
+  final_price: number;
+  discount: number;
+  category: string;
+  type: "paid" | "free";
+  image_url: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReadPublicProfile {
+  user_id: string;
+  name: string;
+}
+
+interface ReadStorePreviewData {
+  profile: ReadPublicProfile;
+  products: ReadPublicProduct[];
 }
 
 export interface CreateProductPayload {
-  name: string
-  category_id: string
-  description: string
-  product_link: string
-  link_verified: boolean
-  discount_percentage: number
-  discount_end_date?: string
-  pricing_type: ProductPricingType
-  price: number
-  visibility: ProductVisibility
-  slug?: string
-  cover_image_url?: string
-  gallery_image_urls?: string[]
-  product_cover?: File | null
-  gallery_images?: File[]
+  name: string;
+  category_id: string;
+  description: string;
+  product_link: string;
+  link_verified: boolean;
+  discount_percentage: number;
+  discount_end_date?: string;
+  pricing_type: ProductPricingType;
+  price: number;
+  visibility: ProductVisibility;
+  slug?: string;
+  cover_image_url?: string;
+  gallery_image_urls?: string[];
+  product_cover?: File | null;
+  gallery_images?: File[];
+}
+
+function mapReadProductToProductRecord(
+  product: ReadPublicProduct,
+): ProductRecord {
+  return {
+    id: product.id,
+    user_id: product.user_id,
+    category_id: null,
+    name: product.name,
+    description: product.description,
+    product_link: "",
+    link_verified: false,
+    discount_percentage: Math.round(product.discount ?? 0),
+    discount_end_at: null,
+    cover_image_url: product.image_url ?? "",
+    gallery_images: [],
+    pricing_type: product.type === "free" ? "free" : "paid",
+    price: Number(product.price ?? 0),
+    visibility: product.visibility === "public" ? "live" : "draft",
+    slug: "",
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+    category: product.category
+      ? {
+          id: "",
+          user_id: product.user_id,
+          name: product.category,
+          slug: "",
+          created_at: product.created_at,
+          updated_at: product.updated_at,
+        }
+      : undefined,
+  };
 }
 
 function buildProductFormData(payload: CreateProductPayload): FormData {
-  const formData = new FormData()
-  formData.append('name', payload.name)
-  formData.append('category_id', payload.category_id)
-  formData.append('description', payload.description)
-  formData.append('product_link', payload.product_link)
-  formData.append('link_verified', String(payload.link_verified))
-  formData.append('discount_percentage', String(payload.discount_percentage))
-  formData.append('pricing_type', payload.pricing_type)
-  formData.append('price', String(payload.price))
-  formData.append('visibility', payload.visibility)
+  const formData = new FormData();
+  formData.append("name", payload.name);
+  formData.append("category_id", payload.category_id);
+  formData.append("description", payload.description);
+  formData.append("product_link", payload.product_link);
+  formData.append("link_verified", String(payload.link_verified));
+  formData.append("discount_percentage", String(payload.discount_percentage));
+  formData.append("pricing_type", payload.pricing_type);
+  formData.append("price", String(payload.price));
+  formData.append("visibility", payload.visibility);
 
   if (payload.slug) {
-    formData.append('slug', payload.slug)
+    formData.append("slug", payload.slug);
   }
 
   if (payload.discount_end_date) {
-    formData.append('discount_end_date', payload.discount_end_date)
+    formData.append("discount_end_date", payload.discount_end_date);
   }
 
   if (payload.cover_image_url) {
-    formData.append('cover_image_url', payload.cover_image_url)
+    formData.append("cover_image_url", payload.cover_image_url);
   }
 
   if (payload.gallery_image_urls && payload.gallery_image_urls.length > 0) {
     payload.gallery_image_urls.forEach((url) => {
-      formData.append('gallery_image_urls', url)
-    })
+      formData.append("gallery_image_urls", url);
+    });
   }
 
   if (payload.product_cover) {
-    formData.append('product_cover', payload.product_cover)
+    formData.append("product_cover", payload.product_cover);
   }
 
   if (payload.gallery_images && payload.gallery_images.length > 0) {
     payload.gallery_images.forEach((file) => {
-      formData.append('gallery_images', file)
-    })
+      formData.append("gallery_images", file);
+    });
   }
 
-  return formData
+  return formData;
 }
 
 export const authApi = {
   async register(payload: RegisterPayload): Promise<AuthUser> {
     try {
-      const response = await apiClient.post<ApiEnvelope<{ user: AuthUser }>>('/auth/register', payload)
-      return unwrapData(response.data).user
+      const response = await apiClient.post<ApiEnvelope<{ user: AuthUser }>>(
+        "/auth/register",
+        payload,
+      );
+      return unwrapData(response.data).user;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'register failed'))
+      throw new Error(extractApiErrorMessage(error, "register failed"));
     }
   },
 
   async login(payload: LoginPayload): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<ApiEnvelope<LoginResponse>>('/auth/login', payload)
-      return unwrapData(response.data)
+      const response = await apiClient.post<ApiEnvelope<LoginResponse>>(
+        "/auth/login",
+        payload,
+      );
+      return unwrapData(response.data);
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'login failed'))
+      throw new Error(extractApiErrorMessage(error, "login failed"));
     }
   },
 
   async me(): Promise<AuthUser> {
     try {
-      const response = await apiClient.get<ApiEnvelope<{ user: AuthUser }>>('/auth/me')
-      return unwrapData(response.data).user
+      const response =
+        await apiClient.get<ApiEnvelope<{ user: AuthUser }>>("/auth/me");
+      return unwrapData(response.data).user;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to load current user'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load current user"),
+      );
     }
   },
 
   async refresh(): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<ApiEnvelope<LoginResponse>>('/auth/refresh')
-      return unwrapData(response.data)
+      const response =
+        await apiClient.post<ApiEnvelope<LoginResponse>>("/auth/refresh");
+      return unwrapData(response.data);
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'refresh failed'))
+      throw new Error(extractApiErrorMessage(error, "refresh failed"));
     }
   },
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/auth/logout')
+      await apiClient.post("/auth/logout");
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'logout failed'))
+      throw new Error(extractApiErrorMessage(error, "logout failed"));
     }
   },
-}
+};
+export const profileApi = {
+  async getMyProfile(): Promise<ProfileResponse> {
+    try {
+      const response = await apiClient.get<
+        ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
+      >("/profiles/me");
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load profile data"),
+      );
+    }
+  },
+
+  async updateField(payload: UpdateProfileFieldPayload): Promise<ProfileResponse> {
+    try {
+      const response = await apiClient.patch<
+        ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
+      >("/profiles/me/field", payload);
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to update profile field"),
+      );
+    }
+  },
+
+  async updateImage(field: ProfileImageField, file: File): Promise<ProfileResponse> {
+    try {
+      const formData = new FormData();
+      formData.append("field", field);
+      formData.append("image", file);
+
+      const response = await apiClient.patch<
+        ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
+      >("/profiles/me/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to update profile image"),
+      );
+    }
+  },
+};
 
 function notImplemented(methodName: string): never {
-  throw new Error(`${methodName} is not implemented yet`)
+  throw new Error(`${methodName} is not implemented yet`);
 }
 
 // ---- Dashboard ----
 export const dashboardApi = {
-  getStats: async (): Promise<DashboardStats> => notImplemented('dashboardApi.getStats'),
-  getRecentActivity: async (): Promise<ActivityItem[]> => notImplemented('dashboardApi.getRecentActivity'),
-}
+  getStats: async (): Promise<DashboardStats> =>
+    notImplemented("dashboardApi.getStats"),
+  getRecentActivity: async (): Promise<ActivityItem[]> =>
+    notImplemented("dashboardApi.getRecentActivity"),
+};
 
 // ---- Transactions ----
 export const transactionsApi = {
-  getAll: async (_params?: { page?: number; limit?: number; status?: string }): Promise<{
-    data: Transaction[]
-    total: number
-  }> => notImplemented('transactionsApi.getAll'),
-  getById: async (_id: string): Promise<Transaction> => notImplemented('transactionsApi.getById'),
-  exportCsv: async (): Promise<Blob> => notImplemented('transactionsApi.exportCsv'),
-}
+  getAll: async (_params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<{
+    data: Transaction[];
+    total: number;
+  }> => notImplemented("transactionsApi.getAll"),
+  getById: async (_id: string): Promise<Transaction> =>
+    notImplemented("transactionsApi.getById"),
+  exportCsv: async (): Promise<Blob> =>
+    notImplemented("transactionsApi.exportCsv"),
+};
 
 // ---- Categories ----
 export const categoriesApi = {
   async getAll(): Promise<Category[]> {
     try {
-      const response = await apiClient.get<ApiEnvelope<{ categories: Category[] }>>('/categories')
-      return unwrapData(response.data).categories ?? []
+      const response =
+        await apiClient.get<ApiEnvelope<{ categories: Category[] }>>(
+          "/categories",
+        );
+      return unwrapData(response.data).categories ?? [];
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to load categories'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load categories"),
+      );
     }
   },
 
   async create(payload: CreateCategoryPayload): Promise<Category> {
     try {
-      const response = await apiClient.post<ApiEnvelope<{ category: Category }>>('/categories', payload)
-      return unwrapData(response.data).category
+      const response = await apiClient.post<
+        ApiEnvelope<{ category: Category }>
+      >("/categories", payload);
+      return unwrapData(response.data).category;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to create category'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to create category"),
+      );
     }
   },
-}
+};
 
 // ---- Products ----
 export const productsApi = {
   async getAll(): Promise<ProductRecord[]> {
     try {
-      const response = await apiClient.get<ApiEnvelope<{ products: ProductRecord[] }>>('/products')
-      return unwrapData(response.data).products ?? []
+      const response =
+        await apiClient.get<ApiEnvelope<{ products: ProductRecord[] }>>(
+          "/products",
+        );
+      return unwrapData(response.data).products ?? [];
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to load products'))
+      throw new Error(extractApiErrorMessage(error, "failed to load products"));
     }
   },
 
   async getById(id: string): Promise<ProductRecord> {
     try {
-      const response = await apiClient.get<ApiEnvelope<{ product: ProductRecord }>>(`/products/${id}`)
-      return unwrapData(response.data).product
+      const response = await apiClient.get<
+        ApiEnvelope<{ product: ProductRecord }>
+      >(`/products/${id}`);
+      return unwrapData(response.data).product;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to load product'))
+      throw new Error(extractApiErrorMessage(error, "failed to load product"));
     }
   },
 
   async create(payload: CreateProductPayload): Promise<ProductRecord> {
     try {
-      const formData = buildProductFormData(payload)
+      const formData = buildProductFormData(payload);
 
-      const response = await apiClient.post<ApiEnvelope<{ product: ProductRecord }>>('/products', formData, {
+      const response = await apiClient.post<
+        ApiEnvelope<{ product: ProductRecord }>
+      >("/products", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
-      })
+      });
 
-      return unwrapData(response.data).product
+      return unwrapData(response.data).product;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to create product'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to create product"),
+      );
     }
   },
 
-  async update(id: string, payload: CreateProductPayload): Promise<ProductRecord> {
+  async update(
+    id: string,
+    payload: CreateProductPayload,
+  ): Promise<ProductRecord> {
     try {
-      const formData = buildProductFormData(payload)
-      const response = await apiClient.put<ApiEnvelope<{ product: ProductRecord }>>(`/products/${id}`, formData, {
+      const formData = buildProductFormData(payload);
+      const response = await apiClient.put<
+        ApiEnvelope<{ product: ProductRecord }>
+      >(`/products/${id}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
-      })
+      });
 
-      return unwrapData(response.data).product
+      return unwrapData(response.data).product;
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to update product'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to update product"),
+      );
     }
   },
 
   async delete(id: string): Promise<void> {
     try {
-      await apiClient.delete(`/products/${id}`)
+      await apiClient.delete(`/products/${id}`);
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, 'failed to delete product'))
+      throw new Error(
+        extractApiErrorMessage(error, "failed to delete product"),
+      );
     }
   },
-}
+};
 
+export const storePreviewApi = {
+  async getByUserId(userId: string): Promise<StorePreviewData> {
+    const normalizedUserId = userId.trim();
+    if (normalizedUserId === "") {
+      throw new Error("invalid user id");
+    }
+
+    try {
+      const response = await readApiClient.get<
+        ReadEnvelope<ReadStorePreviewData>
+      >(`/public/store/${normalizedUserId}`);
+
+      const payload = response.data?.data;
+      return {
+        user_id: normalizedUserId,
+        profile: {
+          name: payload?.profile?.name ?? "",
+        },
+        products: (payload?.products ?? []).map(mapReadProductToProductRecord),
+      };
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load store preview"),
+      );
+    }
+  },
+};
 // ---- Points / Donations ----
 export const pointsApi = {
   getDonations: async (_params?: {
-    page?: number
-    limit?: number
-    period?: string
-  }): Promise<{ data: Donation[]; total: number }> => notImplemented('pointsApi.getDonations'),
+    page?: number;
+    limit?: number;
+    period?: string;
+  }): Promise<{ data: Donation[]; total: number }> =>
+    notImplemented("pointsApi.getDonations"),
   getBalance: async (): Promise<{ points: number; idrEquivalent: number }> =>
-    notImplemented('pointsApi.getBalance'),
-  withdraw: async (_amount: number): Promise<void> => notImplemented('pointsApi.withdraw'),
-}
+    notImplemented("pointsApi.getBalance"),
+  withdraw: async (_amount: number): Promise<void> =>
+    notImplemented("pointsApi.withdraw"),
+};
 
 // ---- OBS Overlay ----
 export const overlayApi = {
-  getSettings: async (): Promise<OverlaySettings> => notImplemented('overlayApi.getSettings'),
-  updateSettings: async (_payload: Partial<OverlaySettings>): Promise<OverlaySettings> =>
-    notImplemented('overlayApi.updateSettings'),
-  resetSettings: async (): Promise<OverlaySettings> => notImplemented('overlayApi.resetSettings'),
-}
+  getSettings: async (): Promise<OverlaySettings> =>
+    notImplemented("overlayApi.getSettings"),
+  updateSettings: async (
+    _payload: Partial<OverlaySettings>,
+  ): Promise<OverlaySettings> => notImplemented("overlayApi.updateSettings"),
+  resetSettings: async (): Promise<OverlaySettings> =>
+    notImplemented("overlayApi.resetSettings"),
+};
 
 // ---- Analytics ----
 export const analyticsApi = {
-  getEarningsChart: async (_period?: string): Promise<{ labels: string[]; data: number[] }> =>
-    notImplemented('analyticsApi.getEarningsChart'),
-  getSummary: async (): Promise<Record<string, unknown>> => notImplemented('analyticsApi.getSummary'),
-}
+  getEarningsChart: async (
+    _period?: string,
+  ): Promise<{ labels: string[]; data: number[] }> =>
+    notImplemented("analyticsApi.getEarningsChart"),
+  getSummary: async (): Promise<Record<string, unknown>> =>
+    notImplemented("analyticsApi.getSummary"),
+};
 
 // ---- Withdraw ----
 export const withdrawApi = {
-  getHistory: async (): Promise<Record<string, unknown>[]> => notImplemented('withdrawApi.getHistory'),
-  request: async (_amount: number, _method: string): Promise<void> => notImplemented('withdrawApi.request'),
-}
+  getHistory: async (): Promise<Record<string, unknown>[]> =>
+    notImplemented("withdrawApi.getHistory"),
+  request: async (_amount: number, _method: string): Promise<void> =>
+    notImplemented("withdrawApi.request"),
+};
+
+
+
 
 
 

@@ -28,7 +28,7 @@ const router = createRouter({
 
     // ---- Store Preview (Public) ----
     {
-      path: "/store-preview",
+      path: "/store-preview/:userId",
       name: "store-preview",
       component: () => import("@/pages/StorePreviewPage.vue"),
       meta: { title: "Store Preview | Angpaoku" },
@@ -155,3 +155,4 @@ router.afterEach((to) => {
 });
 
 export default router;
+
