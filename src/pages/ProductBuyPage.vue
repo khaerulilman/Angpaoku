@@ -511,6 +511,10 @@ async function submitCheckout(): Promise<void> {
     const checkoutResult = await buyOrderApi.createTransaction({
       product_id: product.value.id,
       email: normalizedEmail,
+      gross_amount: getFinalPrice(product.value),
+      product_name: product.value.name,
+      user_id: product.value.user_id,
+      quantity: 1,
     });
 
     const orderID = checkoutResult.transaction.order_id;

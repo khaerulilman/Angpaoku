@@ -7,8 +7,22 @@ import type {
   Transaction,
 } from "@/types";
 
+function sanitizeBaseUrl(value: string | undefined): string {
+  return (value ?? "").trim().replace(/\/$/, "");
+}
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const READ_BASE_URL = import.meta.env.VITE_READ_API_BASE_URL;
+const STORE_PRODUCT_BASE_URL = sanitizeBaseUrl(
+  import.meta.env.VITE_STORE_PRODUCT_BASE_URL,
+);
+const READ_BASE_URL =
+  STORE_PRODUCT_BASE_URL ||
+  sanitizeBaseUrl(import.meta.env.VITE_READ_API_BASE_URL);
+const PRODUCT_BUY_URL =
+  import.meta.env.VITE_PRODUCT_BUY_URL ?? "http://localhost:8082";
+const PRODUCT_BUY_BASE_URL = PRODUCT_BUY_URL.endsWith("/api/v1")
+  ? PRODUCT_BUY_URL
+  : `${PRODUCT_BUY_URL.replace(/\/$/, "")}/api/v1`;
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
@@ -19,6 +33,14 @@ const apiClient = axios.create({
 
 const readApiClient = axios.create({
   baseURL: READ_BASE_URL,
+  withCredentials: false,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const productBuyApiClient = axios.create({
+  baseURL: PRODUCT_BUY_BASE_URL,
   withCredentials: false,
   headers: {
     "Content-Type": "application/json",
@@ -72,6 +94,44 @@ function extractApiErrorMessage(
 
 function unwrapData<T>(payload: ApiEnvelope<T>): T {
   return payload.data;
+}
+
+function ensureReadApiBaseUrl(): void {
+  if (READ_BASE_URL.trim() !== "") {
+    return;
+  }
+
+  throw new Error(
+    "VITE_STORE_PRODUCT_BASE_URL belum diatur. Set URL API public product di file .env.",
+  );
+}
+
+function normalizePublicAssetUrl(url: string | null | undefined): string {
+  const rawURL = (url ?? "").trim();
+  if (rawURL === "") {
+    return "";
+  }
+
+  if (
+    /^https?:\/\//i.test(rawURL) ||
+    rawURL.startsWith("//") ||
+    rawURL.startsWith("data:") ||
+    rawURL.startsWith("blob:")
+  ) {
+    return rawURL;
+  }
+
+  const normalizedPath = rawURL.replace(/^\/?public\//, "/");
+
+  if (READ_BASE_URL === "") {
+    return normalizedPath;
+  }
+
+  if (normalizedPath.startsWith("/")) {
+    return `${READ_BASE_URL}${normalizedPath}`;
+  }
+
+  return `${READ_BASE_URL}/${normalizedPath}`;
 }
 
 export interface AuthUser {
@@ -249,18 +309,29 @@ export interface PublicProductDetailData {
 export interface CreateBuyOrderPayload {
   product_id: string;
   buyer_email: string;
+  gross_amount: number;
+  product_name?: string;
+  user_id?: string;
+  quantity?: number;
 }
 
 export interface CreateTransactionPayload {
   product_id: string;
   email: string;
+  gross_amount: number;
+  product_name?: string;
+  user_id?: string;
+  quantity?: number;
 }
 
 export interface CheckoutTransaction {
   id: string;
   order_id: string;
+  user_id?: string;
   product_id: string;
+  product_name?: string;
   email: string;
+  quantity?: number;
   gross_amount: number;
   payment_type: string;
   transaction_status: string;
@@ -314,7 +385,7 @@ function mapReadProductToProductRecord(
     link_verified: false,
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
-    cover_image_url: product.image_url ?? "",
+    cover_image_url: normalizePublicAssetUrl(product.image_url),
     gallery_images: [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
@@ -349,7 +420,7 @@ function mapPublicDetailToProductRecord(
     link_verified: false,
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
-    cover_image_url: product.image_url ?? "",
+    cover_image_url: normalizePublicAssetUrl(product.image_url),
     gallery_images: [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
@@ -663,6 +734,8 @@ export const storePreviewApi = {
       throw new Error("invalid username");
     }
 
+    ensureReadApiBaseUrl();
+
     try {
       const response = await readApiClient.get<
         ReadEnvelope<ReadStorePreviewData>
@@ -691,6 +764,8 @@ export const publicProductsApi = {
       throw new Error("invalid product id");
     }
 
+    ensureReadApiBaseUrl();
+
     try {
       const response = await readApiClient.get<ReadEnvelope<PublicProductDetailData>>(
         `/public/product/${encodeURIComponent(normalizedProductID)}`,
@@ -715,7 +790,7 @@ export const buyOrderApi = {
     payload: CreateTransactionPayload,
   ): Promise<TransactionCheckoutResult> {
     try {
-      const response = await apiClient.post<
+      const response = await productBuyApiClient.post<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -736,6 +811,10 @@ export const buyOrderApi = {
     return buyOrderApi.createTransaction({
       product_id: payload.product_id,
       email: payload.buyer_email,
+      gross_amount: payload.gross_amount,
+      product_name: payload.product_name,
+      user_id: payload.user_id,
+      quantity: payload.quantity,
     });
   },
 
@@ -746,7 +825,7 @@ export const buyOrderApi = {
     }
 
     try {
-      const response = await apiClient.get<
+      const response = await productBuyApiClient.get<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -802,6 +881,10 @@ export const withdrawApi = {
   request: async (_amount: number, _method: string): Promise<void> =>
     notImplemented("withdrawApi.request"),
 };
+
+
+
+
 
 
 
