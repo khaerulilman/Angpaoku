@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import type {
   ActivityItem,
   DashboardStats,
@@ -251,8 +251,36 @@ export interface CreateBuyOrderPayload {
   buyer_email: string;
 }
 
-export interface BuyOrderResult {
-  snap_url: string;
+export interface CreateTransactionPayload {
+  product_id: string;
+  email: string;
+}
+
+export interface CheckoutTransaction {
+  id: string;
+  order_id: string;
+  product_id: string;
+  email: string;
+  gross_amount: number;
+  payment_type: string;
+  transaction_status: string;
+  fraud_status?: string;
+  snap_token: string;
+  snap_redirect_url: string;
+  expired_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TransactionCheckoutResult {
+  transaction: CheckoutTransaction;
+  payment_status: string;
+  midtrans_client_key: string;
+}
+
+export interface TransactionStatusResponse {
+  transaction: CheckoutTransaction;
+  payment_status: string;
 }
 
 export interface CreateProductPayload {
@@ -683,15 +711,52 @@ export const publicProductsApi = {
 };
 
 export const buyOrderApi = {
-  async createOrder(payload: CreateBuyOrderPayload): Promise<BuyOrderResult> {
+  async createTransaction(
+    payload: CreateTransactionPayload,
+  ): Promise<TransactionCheckoutResult> {
     try {
-      const response = await apiClient.post<ApiEnvelope<BuyOrderResult>>(
-        "/orders",
-        payload,
-      );
+      const response = await apiClient.post<
+        ApiEnvelope<{
+          transaction: CheckoutTransaction;
+          payment_status: string;
+          midtrans_client_key: string;
+        }>
+      >("/transactions", payload);
       return unwrapData(response.data);
     } catch (error) {
-      throw new Error(extractApiErrorMessage(error, "failed to create order"));
+      throw new Error(
+        extractApiErrorMessage(error, "failed to create transaction"),
+      );
+    }
+  },
+
+  async createOrder(
+    payload: CreateBuyOrderPayload,
+  ): Promise<TransactionCheckoutResult> {
+    return buyOrderApi.createTransaction({
+      product_id: payload.product_id,
+      email: payload.buyer_email,
+    });
+  },
+
+  async getTransactionStatus(orderID: string): Promise<TransactionStatusResponse> {
+    const normalizedOrderID = orderID.trim();
+    if (normalizedOrderID === "") {
+      throw new Error("invalid order id");
+    }
+
+    try {
+      const response = await apiClient.get<
+        ApiEnvelope<{
+          transaction: CheckoutTransaction;
+          payment_status: string;
+        }>
+      >(`/transactions/${encodeURIComponent(normalizedOrderID)}`);
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load transaction status"),
+      );
     }
   },
 };
@@ -737,6 +802,7 @@ export const withdrawApi = {
   request: async (_amount: number, _method: string): Promise<void> =>
     notImplemented("withdrawApi.request"),
 };
+
 
 
 
