@@ -30,7 +30,7 @@
               {{ profileDisplayName }}
             </h1>
             <p class="text-sm text-on-surface-variant">
-              User ID: <span class="font-semibold text-on-surface">{{ previewUserId || '-' }}</span>
+              Username: <span class="font-semibold text-on-surface">{{ previewUsername || '-' }}</span>
             </p>
           </div>
 
@@ -181,7 +181,7 @@ const profileName = ref('')
 const products = ref<ProductRecord[]>([])
 const selectedFilter = ref('All')
 
-const previewUserId = computed(() => String(route.params.userId ?? '').trim())
+const previewUsername = computed(() => String(route.params.username ?? '').trim())
 
 const profileDisplayName = computed(() => {
   const name = profileName.value.trim()
@@ -251,8 +251,8 @@ function displayPrice(product: ProductRecord): string {
 }
 
 async function loadStorePreview(): Promise<void> {
-  if (previewUserId.value === '') {
-    errorMessage.value = 'User ID pada URL tidak valid.'
+  if (previewUsername.value === '') {
+    errorMessage.value = 'Username pada URL tidak valid.'
     products.value = []
     profileName.value = ''
     return
@@ -262,8 +262,8 @@ async function loadStorePreview(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const data = await storePreviewApi.getByUserId(previewUserId.value)
-    profileName.value = data.profile?.name ?? ''
+    const data = await storePreviewApi.getByUsername(previewUsername.value)
+    profileName.value = data.profile?.username ?? data.username ?? ''
     products.value = data.products ?? []
 
     if (!filters.value.includes(selectedFilter.value)) {
@@ -279,7 +279,7 @@ async function loadStorePreview(): Promise<void> {
 }
 
 watch(
-  () => previewUserId.value,
+  () => previewUsername.value,
   () => {
     selectedFilter.value = 'All'
     void loadStorePreview()

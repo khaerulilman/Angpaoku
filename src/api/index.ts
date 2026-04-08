@@ -181,15 +181,17 @@ export interface ProductRecord {
   slug: string;
   created_at: string;
   updated_at: string;
+  username?: string;
+  sold_count?: number;
   category?: Category;
 }
 
 export interface StorePreviewProfile {
-  name: string;
+  username: string;
 }
 
 export interface StorePreviewData {
-  user_id: string;
+  username: string;
   profile: StorePreviewProfile;
   products: ProductRecord[];
 }
@@ -211,13 +213,46 @@ interface ReadPublicProduct {
 }
 
 interface ReadPublicProfile {
-  user_id: string;
-  name: string;
+  username: string;
 }
 
 interface ReadStorePreviewData {
   profile: ReadPublicProfile;
   products: ReadPublicProduct[];
+}
+
+export interface PublicProductDetailProfile {
+  username: string;
+}
+
+export interface PublicProductDetailProduct {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  price: number;
+  final_price: number;
+  discount: number;
+  category: string;
+  type: "paid" | "free";
+  image_url: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicProductDetailData {
+  profile: PublicProductDetailProfile;
+  product: PublicProductDetailProduct;
+}
+
+export interface CreateBuyOrderPayload {
+  product_id: string;
+  buyer_email: string;
+}
+
+export interface BuyOrderResult {
+  snap_url: string;
 }
 
 export interface CreateProductPayload {
@@ -259,6 +294,43 @@ function mapReadProductToProductRecord(
     slug: "",
     created_at: product.created_at,
     updated_at: product.updated_at,
+    category: product.category
+      ? {
+          id: "",
+          user_id: product.user_id,
+          name: product.category,
+          slug: "",
+          created_at: product.created_at,
+          updated_at: product.updated_at,
+        }
+      : undefined,
+  };
+}
+
+function mapPublicDetailToProductRecord(
+  data: PublicProductDetailData,
+): ProductRecord {
+  const product = data.product;
+  return {
+    id: product.id,
+    user_id: product.user_id,
+    category_id: null,
+    name: product.name,
+    description: product.description,
+    product_link: "",
+    link_verified: false,
+    discount_percentage: Math.round(product.discount ?? 0),
+    discount_end_at: null,
+    cover_image_url: product.image_url ?? "",
+    gallery_images: [],
+    pricing_type: product.type === "free" ? "free" : "paid",
+    price: Number(product.price ?? 0),
+    visibility: product.visibility === "public" ? "live" : "draft",
+    slug: "",
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+    username: data.profile?.username ?? "",
+    sold_count: 0,
     category: product.category
       ? {
           id: "",
@@ -557,22 +629,22 @@ export const productsApi = {
 };
 
 export const storePreviewApi = {
-  async getByUserId(userId: string): Promise<StorePreviewData> {
-    const normalizedUserId = userId.trim();
-    if (normalizedUserId === "") {
-      throw new Error("invalid user id");
+  async getByUsername(username: string): Promise<StorePreviewData> {
+    const normalizedUsername = username.trim();
+    if (normalizedUsername === "") {
+      throw new Error("invalid username");
     }
 
     try {
       const response = await readApiClient.get<
         ReadEnvelope<ReadStorePreviewData>
-      >(`/public/store/${normalizedUserId}`);
+      >(`/public/store/${encodeURIComponent(normalizedUsername)}`);
 
       const payload = response.data?.data;
       return {
-        user_id: normalizedUserId,
+        username: normalizedUsername,
         profile: {
-          name: payload?.profile?.name ?? "",
+          username: payload?.profile?.username ?? normalizedUsername,
         },
         products: (payload?.products ?? []).map(mapReadProductToProductRecord),
       };
@@ -580,6 +652,46 @@ export const storePreviewApi = {
       throw new Error(
         extractApiErrorMessage(error, "failed to load store preview"),
       );
+    }
+  },
+};
+
+export const publicProductsApi = {
+  async getById(productId: string): Promise<ProductRecord> {
+    const normalizedProductID = productId.trim();
+    if (normalizedProductID === "") {
+      throw new Error("invalid product id");
+    }
+
+    try {
+      const response = await readApiClient.get<ReadEnvelope<PublicProductDetailData>>(
+        `/public/product/${encodeURIComponent(normalizedProductID)}`,
+      );
+
+      const payload = response.data?.data;
+      if (!payload?.product) {
+        throw new Error("product not found");
+      }
+
+      return mapPublicDetailToProductRecord(payload);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load public product"),
+      );
+    }
+  },
+};
+
+export const buyOrderApi = {
+  async createOrder(payload: CreateBuyOrderPayload): Promise<BuyOrderResult> {
+    try {
+      const response = await apiClient.post<ApiEnvelope<BuyOrderResult>>(
+        "/orders",
+        payload,
+      );
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(extractApiErrorMessage(error, "failed to create order"));
     }
   },
 };

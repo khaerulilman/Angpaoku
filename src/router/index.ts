@@ -28,10 +28,16 @@ const router = createRouter({
 
     // ---- Store Preview (Public) ----
     {
-      path: "/store-preview/:userId",
+      path: "/store-preview/:username",
       name: "store-preview",
       component: () => import("@/pages/StorePreviewPage.vue"),
       meta: { title: "Store Preview | Angpaoku" },
+    },
+    {
+      path: "/product-buy/:productId",
+      name: "product-buy",
+      component: () => import("@/pages/ProductBuyPage.vue"),
+      meta: { title: "Buy Product | Angpaoku" },
     },
 
     // ---- Dashboard (Creator Portal) ----
