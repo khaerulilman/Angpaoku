@@ -393,6 +393,7 @@ export interface NotificationRecord {
   product_name?: string | null;
   order_id?: string | null;
   status: string;
+  purchase_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1068,6 +1069,32 @@ export const notificationsApi = {
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to mark notification as read"),
+      );
+    }
+  },
+
+  async markAllAsRead(userID: string): Promise<void> {
+    const normalizedUserID = userID.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    try {
+      await productBuyApiClient.patch(
+        "/notifications/read",
+        {},
+        {
+          headers: {
+            "X-User-ID": normalizedUserID,
+          },
+          params: {
+            user_id: normalizedUserID,
+          },
+        },
+      );
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to mark all notifications as read"),
       );
     }
   },

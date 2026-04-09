@@ -91,12 +91,20 @@
                   @click="onNotificationClick(item)"
                 >
                   <div class="flex items-start justify-between gap-3">
-                    <p
-                      class="text-sm font-semibold text-on-surface"
-                      :class="{ 'opacity-70': item.is_read }"
-                    >
-                      {{ item.title }}
-                    </p>
+                    <div class="min-w-0">
+                      <p
+                        class="text-sm font-semibold text-on-surface"
+                        :class="{ 'opacity-70': item.is_read }"
+                      >
+                        {{ item.title }}
+                      </p>
+                      <p
+                        v-if="(item.purchase_count ?? 0) > 1"
+                        class="mt-1 text-[11px] font-semibold text-primary"
+                      >
+                        Total pembelian: x{{ item.purchase_count }}
+                      </p>
+                    </div>
                     <span
                       class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
                       :class="statusBadgeClass(item.status)"
@@ -202,26 +210,35 @@ async function refreshNotifications(): Promise<void> {
   }
 }
 
-async function onNotificationClick(item: NotificationRecord): Promise<void> {
-  if (item.is_read || currentUserID.value === "") {
+async function onNotificationClick(_item: NotificationRecord): Promise<void> {
+  isNotificationOpen.value = false;
+}
+
+async function markAllNotificationsAsRead(): Promise<void> {
+  const userID = currentUserID.value;
+  if (userID === "") {
     return;
   }
 
   try {
-    await notificationsApi.markAsRead(currentUserID.value, item.id);
-    item.is_read = true;
-    unreadCount.value = Math.max(0, unreadCount.value - 1);
+    await notificationsApi.markAllAsRead(userID);
+    unreadCount.value = 0;
+    notifications.value = notifications.value.map((item) => ({
+      ...item,
+      is_read: true,
+    }));
   } catch (error) {
     notificationError.value =
       error instanceof Error
         ? error.message
-        : "Gagal menandai notifikasi sebagai dibaca.";
+        : "Gagal menandai semua notifikasi sebagai dibaca.";
   }
 }
 
 async function toggleNotifications(): Promise<void> {
   isNotificationOpen.value = !isNotificationOpen.value;
   if (isNotificationOpen.value) {
+    await markAllNotificationsAsRead();
     await refreshNotifications();
   }
 }
