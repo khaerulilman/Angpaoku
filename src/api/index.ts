@@ -4,7 +4,6 @@ import type {
   DashboardStats,
   Donation,
   OverlaySettings,
-  Transaction,
 } from "@/types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -244,6 +243,60 @@ interface ReadStorePreviewData {
   products: ReadPublicProduct[];
 }
 
+interface ReadTransactionSummary {
+  total_revenue: number;
+  product_sales: number;
+  total_transactions: number;
+}
+
+export interface TransactionHistoryItem {
+  id: string;
+  order_id: string;
+  user_id: string;
+  product_id: string;
+  product_name: string;
+  email: string;
+  quantity: number;
+  gross_amount: number;
+  payment_type: string;
+  transaction_status: string;
+  fraud_status?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+interface ReadTransactionHistoryData {
+  summary: ReadTransactionSummary;
+  transactions: TransactionHistoryItem[];
+}
+
+interface ReadTransactionsResponse {
+  data: ReadTransactionHistoryData;
+  page?: number;
+  limit?: number;
+}
+
+interface BuyProductTransactionHistoryData {
+  summary: ReadTransactionSummary;
+  transactions: TransactionHistoryItem[];
+  page?: number;
+  limit?: number;
+}
+
+export interface TransactionHistorySummary {
+  total_revenue: number;
+  product_sales: number;
+  total_transactions: number;
+}
+
+export interface TransactionHistoryResult {
+  summary: TransactionHistorySummary;
+  transactions: TransactionHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface PublicProductDetailProfile {
   username: string;
 }
@@ -277,6 +330,11 @@ export interface CreateBuyOrderPayload {
 export interface CreateTransactionPayload {
   product_id: string;
   email: string;
+  user_id?: string;
+  buyer_user_id?: string;
+  product_name?: string;
+  gross_amount?: number;
+  quantity?: number;
 }
 
 export interface CheckoutTransaction {
@@ -585,19 +643,113 @@ export const dashboardApi = {
 
 // ---- Transactions ----
 export const transactionsApi = {
-  getAll: async (_params?: {
+  async getAll(params: {
+    user_id: string;
     page?: number;
     limit?: number;
-    status?: string;
-  }): Promise<{
-    data: Transaction[];
-    total: number;
-  }> => notImplemented("transactionsApi.getAll"),
-  getById: async (_id: string): Promise<Transaction> =>
+  }): Promise<TransactionHistoryResult> {
+    const normalizedUserID = params.user_id.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 20;
+
+    let firstError: unknown;
+
+    try {
+      const response = await readApiClient.get<ReadTransactionsResponse>(
+        "/public/transactions",
+        {
+          params: {
+            user_id: normalizedUserID,
+            page,
+            limit,
+          },
+        },
+      );
+
+      const result = toTransactionHistoryResult(
+        response.data?.data,
+        response.data?.page ?? page,
+        response.data?.limit ?? limit,
+      );
+
+      if (result.total > 0 || result.transactions.length > 0) {
+        return result;
+      }
+    } catch (error) {
+      firstError = error;
+    }
+
+    try {
+      const response = await productBuyApiClient.get<
+        ApiEnvelope<BuyProductTransactionHistoryData>
+      >("/transactions/history", {
+        params: {
+          user_id: normalizedUserID,
+          page,
+          limit,
+        },
+      });
+
+      const payload = unwrapData(response.data);
+      return toTransactionHistoryResult(
+        payload,
+        payload?.page ?? page,
+        payload?.limit ?? limit,
+      );
+    } catch (error) {
+      if (firstError) {
+        throw new Error(
+          extractApiErrorMessage(
+            firstError,
+            "failed to load transaction history from read service",
+          ),
+        );
+      }
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load transaction history"),
+      );
+    }
+  },
+  getById: async (_id: string): Promise<TransactionHistoryItem> =>
     notImplemented("transactionsApi.getById"),
   exportCsv: async (): Promise<Blob> =>
     notImplemented("transactionsApi.exportCsv"),
 };
+
+function toTransactionHistoryResult(
+  payload: {
+    summary?: ReadTransactionSummary;
+    transactions?: TransactionHistoryItem[];
+  } | null | undefined,
+  page: number,
+  limit: number,
+): TransactionHistoryResult {
+  const summary = payload?.summary ?? {
+    total_revenue: 0,
+    product_sales: 0,
+    total_transactions: 0,
+  };
+
+  return {
+    summary: {
+      total_revenue: Number(summary.total_revenue ?? 0),
+      product_sales: Number(summary.product_sales ?? 0),
+      total_transactions: Number(summary.total_transactions ?? 0),
+    },
+    transactions: (payload?.transactions ?? []).map((item) => ({
+      ...item,
+      quantity: Number(item.quantity ?? 0),
+      gross_amount: Number(item.gross_amount ?? 0),
+    })),
+    total: Number(summary.total_transactions ?? 0),
+    page: Number(page ?? 1),
+    limit: Number(limit ?? 20),
+  };
+}
 
 // ---- Categories ----
 export const categoriesApi = {
@@ -766,7 +918,7 @@ export const buyOrderApi = {
     payload: CreateTransactionPayload,
   ): Promise<TransactionCheckoutResult> {
     try {
-      const response = await apiClient.post<
+      const response = await productBuyApiClient.post<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -799,7 +951,7 @@ export const buyOrderApi = {
     }
 
     try {
-      const response = await apiClient.get<
+      const response = await productBuyApiClient.get<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
