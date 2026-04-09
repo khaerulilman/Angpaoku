@@ -7,22 +7,24 @@ import type {
   Transaction,
 } from "@/types";
 
-function sanitizeBaseUrl(value: string | undefined): string {
-  return (value ?? "").trim().replace(/\/$/, "");
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const READ_BASE_URL = import.meta.env.VITE_STORE_PRODUCT_BASE_URL;
+const PRODUCT_BUY_URL = import.meta.env.VITE_PRODUCT_BUY_URL;
+
+function buildProductBuyBaseURL(rawBaseURL?: string): string {
+  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
+  if (normalizedBaseURL === "") {
+    return "/api/v1";
+  }
+
+  if (normalizedBaseURL.endsWith("/api/v1")) {
+    return normalizedBaseURL;
+  }
+
+  return `${normalizedBaseURL}/api/v1`;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const STORE_PRODUCT_BASE_URL = sanitizeBaseUrl(
-  import.meta.env.VITE_STORE_PRODUCT_BASE_URL,
-);
-const READ_BASE_URL =
-  STORE_PRODUCT_BASE_URL ||
-  sanitizeBaseUrl(import.meta.env.VITE_READ_API_BASE_URL);
-const PRODUCT_BUY_URL =
-  import.meta.env.VITE_PRODUCT_BUY_URL ?? "http://localhost:8082";
-const PRODUCT_BUY_BASE_URL = PRODUCT_BUY_URL.endsWith("/api/v1")
-  ? PRODUCT_BUY_URL
-  : `${PRODUCT_BUY_URL.replace(/\/$/, "")}/api/v1`;
+const PRODUCT_BUY_BASE_URL = buildProductBuyBaseURL(PRODUCT_BUY_URL);
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
@@ -96,44 +98,6 @@ function unwrapData<T>(payload: ApiEnvelope<T>): T {
   return payload.data;
 }
 
-function ensureReadApiBaseUrl(): void {
-  if (READ_BASE_URL.trim() !== "") {
-    return;
-  }
-
-  throw new Error(
-    "VITE_STORE_PRODUCT_BASE_URL belum diatur. Set URL API public product di file .env.",
-  );
-}
-
-function normalizePublicAssetUrl(url: string | null | undefined): string {
-  const rawURL = (url ?? "").trim();
-  if (rawURL === "") {
-    return "";
-  }
-
-  if (
-    /^https?:\/\//i.test(rawURL) ||
-    rawURL.startsWith("//") ||
-    rawURL.startsWith("data:") ||
-    rawURL.startsWith("blob:")
-  ) {
-    return rawURL;
-  }
-
-  const normalizedPath = rawURL.replace(/^\/?public\//, "/");
-
-  if (READ_BASE_URL === "") {
-    return normalizedPath;
-  }
-
-  if (normalizedPath.startsWith("/")) {
-    return `${READ_BASE_URL}${normalizedPath}`;
-  }
-
-  return `${READ_BASE_URL}/${normalizedPath}`;
-}
-
 export interface AuthUser {
   id: string;
   email: string;
@@ -157,7 +121,6 @@ export interface RegisterPayload {
   email: string;
   password: string;
 }
-
 
 export interface ProfileRecord {
   id: string;
@@ -309,29 +272,18 @@ export interface PublicProductDetailData {
 export interface CreateBuyOrderPayload {
   product_id: string;
   buyer_email: string;
-  gross_amount: number;
-  product_name?: string;
-  user_id?: string;
-  quantity?: number;
 }
 
 export interface CreateTransactionPayload {
   product_id: string;
   email: string;
-  gross_amount: number;
-  product_name?: string;
-  user_id?: string;
-  quantity?: number;
 }
 
 export interface CheckoutTransaction {
   id: string;
   order_id: string;
-  user_id?: string;
   product_id: string;
-  product_name?: string;
   email: string;
-  quantity?: number;
   gross_amount: number;
   payment_type: string;
   transaction_status: string;
@@ -372,6 +324,28 @@ export interface CreateProductPayload {
   gallery_images?: File[];
 }
 
+export interface NotificationRecord {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  product_id?: string | null;
+  product_name?: string | null;
+  order_id?: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: NotificationRecord[];
+  unread_count: number;
+  limit: number;
+  offset: number;
+}
+
 function mapReadProductToProductRecord(
   product: ReadPublicProduct,
 ): ProductRecord {
@@ -385,7 +359,7 @@ function mapReadProductToProductRecord(
     link_verified: false,
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
-    cover_image_url: normalizePublicAssetUrl(product.image_url),
+    cover_image_url: product.image_url ?? "",
     gallery_images: [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
@@ -420,7 +394,7 @@ function mapPublicDetailToProductRecord(
     link_verified: false,
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
-    cover_image_url: normalizePublicAssetUrl(product.image_url),
+    cover_image_url: product.image_url ?? "",
     gallery_images: [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
@@ -544,9 +518,10 @@ export const authApi = {
 export const profileApi = {
   async getMyProfile(): Promise<ProfileResponse> {
     try {
-      const response = await apiClient.get<
-        ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
-      >("/profiles/me");
+      const response =
+        await apiClient.get<
+          ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
+        >("/profiles/me");
       return unwrapData(response.data);
     } catch (error) {
       throw new Error(
@@ -555,7 +530,9 @@ export const profileApi = {
     }
   },
 
-  async updateField(payload: UpdateProfileFieldPayload): Promise<ProfileResponse> {
+  async updateField(
+    payload: UpdateProfileFieldPayload,
+  ): Promise<ProfileResponse> {
     try {
       const response = await apiClient.patch<
         ApiEnvelope<{ user: AuthUser; profile: ProfileRecord }>
@@ -568,7 +545,10 @@ export const profileApi = {
     }
   },
 
-  async updateImage(field: ProfileImageField, file: File): Promise<ProfileResponse> {
+  async updateImage(
+    field: ProfileImageField,
+    file: File,
+  ): Promise<ProfileResponse> {
     try {
       const formData = new FormData();
       formData.append("field", field);
@@ -734,8 +714,6 @@ export const storePreviewApi = {
       throw new Error("invalid username");
     }
 
-    ensureReadApiBaseUrl();
-
     try {
       const response = await readApiClient.get<
         ReadEnvelope<ReadStorePreviewData>
@@ -764,12 +742,10 @@ export const publicProductsApi = {
       throw new Error("invalid product id");
     }
 
-    ensureReadApiBaseUrl();
-
     try {
-      const response = await readApiClient.get<ReadEnvelope<PublicProductDetailData>>(
-        `/public/product/${encodeURIComponent(normalizedProductID)}`,
-      );
+      const response = await readApiClient.get<
+        ReadEnvelope<PublicProductDetailData>
+      >(`/public/product/${encodeURIComponent(normalizedProductID)}`);
 
       const payload = response.data?.data;
       if (!payload?.product) {
@@ -790,7 +766,7 @@ export const buyOrderApi = {
     payload: CreateTransactionPayload,
   ): Promise<TransactionCheckoutResult> {
     try {
-      const response = await productBuyApiClient.post<
+      const response = await apiClient.post<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -811,21 +787,19 @@ export const buyOrderApi = {
     return buyOrderApi.createTransaction({
       product_id: payload.product_id,
       email: payload.buyer_email,
-      gross_amount: payload.gross_amount,
-      product_name: payload.product_name,
-      user_id: payload.user_id,
-      quantity: payload.quantity,
     });
   },
 
-  async getTransactionStatus(orderID: string): Promise<TransactionStatusResponse> {
+  async getTransactionStatus(
+    orderID: string,
+  ): Promise<TransactionStatusResponse> {
     const normalizedOrderID = orderID.trim();
     if (normalizedOrderID === "") {
       throw new Error("invalid order id");
     }
 
     try {
-      const response = await productBuyApiClient.get<
+      const response = await apiClient.get<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -882,13 +856,67 @@ export const withdrawApi = {
     notImplemented("withdrawApi.request"),
 };
 
+// ---- Notifications ----
+export const notificationsApi = {
+  async getByUser(
+    userID: string,
+    params?: { limit?: number; offset?: number },
+  ): Promise<NotificationListResponse> {
+    const normalizedUserID = userID.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
 
+    const limit = params?.limit ?? 20;
+    const offset = params?.offset ?? 0;
 
+    try {
+      const response =
+        await productBuyApiClient.get<ApiEnvelope<NotificationListResponse>>(
+          "/notifications",
+          {
+            headers: {
+              "X-User-ID": normalizedUserID,
+            },
+            params: {
+              user_id: normalizedUserID,
+              limit,
+              offset,
+            },
+          },
+        );
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load notifications"),
+      );
+    }
+  },
 
+  async markAsRead(userID: string, notificationID: string): Promise<void> {
+    const normalizedUserID = userID.trim();
+    const normalizedNotificationID = notificationID.trim();
+    if (normalizedUserID === "" || normalizedNotificationID === "") {
+      throw new Error("invalid notification input");
+    }
 
-
-
-
-
-
-
+    try {
+      await productBuyApiClient.patch(
+        `/notifications/${encodeURIComponent(normalizedNotificationID)}/read`,
+        {},
+        {
+          headers: {
+            "X-User-ID": normalizedUserID,
+          },
+          params: {
+            user_id: normalizedUserID,
+          },
+        },
+      );
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to mark notification as read"),
+      );
+    }
+  },
+};

@@ -203,6 +203,7 @@
 import { buyOrderApi, publicProductsApi, type ProductRecord } from "@/api";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 type NoticeType = "success" | "warning" | "error" | "info";
 
@@ -233,6 +234,7 @@ declare global {
 const MIDTRANS_SNAP_SCRIPT_URL = "https://app.sandbox.midtrans.com/snap/snap.js";
 
 const route = useRoute();
+const authStore = useAuthStore();
 
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -247,6 +249,7 @@ const checkoutNoticeType = ref<NoticeType>("info");
 const currentOrderID = ref("");
 
 const productId = computed(() => String(route.params.productId ?? "").trim());
+const buyerUserID = computed(() => authStore.user?.id?.trim() ?? "");
 
 const creatorLabel = computed(() => {
   if (!product.value) {
@@ -514,6 +517,7 @@ async function submitCheckout(): Promise<void> {
       gross_amount: getFinalPrice(product.value),
       product_name: product.value.name,
       user_id: product.value.user_id,
+      buyer_user_id: buyerUserID.value || undefined,
       quantity: 1,
     });
 
