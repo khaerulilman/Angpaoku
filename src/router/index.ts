@@ -40,17 +40,16 @@ const router = createRouter({
       meta: { title: "Buy Product | Angpaoku" },
     },
     {
-<<<<<<< HEAD
       path: "/donations/khaerulilman",
       name: "donation-gift-khaerulilman",
       component: () => import("@/pages/DonationGiftPage.vue"),
       meta: { title: "Donations | Khaerul Ilman | Angpaoku" },
-=======
+    },
+    {
       path: "/get-verified/:userId",
       name: "get-verified",
       component: () => import("@/pages/GetVerifiedPage.vue"),
       meta: { title: "Get Verified | Angpaoku", requiresAuth: true },
->>>>>>> e6f126f1c3492ecd2779af1cbf84e5828e95917f
     },
 
     // ---- Dashboard (Creator Portal) ----
