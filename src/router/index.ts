@@ -39,6 +39,12 @@ const router = createRouter({
       component: () => import("@/pages/ProductBuyPage.vue"),
       meta: { title: "Buy Product | Angpaoku" },
     },
+    {
+      path: "/donations/khaerulilman",
+      name: "donation-gift-khaerulilman",
+      component: () => import("@/pages/DonationGiftPage.vue"),
+      meta: { title: "Donations | Khaerul Ilman | Angpaoku" },
+    },
 
     // ---- Dashboard (Creator Portal) ----
     {
