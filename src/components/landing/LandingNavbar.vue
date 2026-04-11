@@ -39,7 +39,7 @@
             class="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
           >
             <AppAvatar
-              :src="`https://ui-avatars.com/api/?name=${displayName}`"
+              :src="avatarSrc"
               size="sm"
             />
             <div>
@@ -70,22 +70,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import AppButton from "@/components/common/AppButton.vue";
 import AppAvatar from "@/components/common/AppAvatar.vue";
 import { useAuthStore } from "@/stores/auth";
+import { profileApi } from "@/api";
 
 const authStore = useAuthStore();
 const router = useRouter();
 
+const profileName = ref("");
+const profilePhotoUrl = ref("");
+
 const displayName = computed(() => {
+  if (profileName.value.trim() !== "") {
+    return profileName.value.trim();
+  }
+
   const fullName = authStore.user?.full_name?.trim() ?? "";
   if (fullName !== "") {
     return fullName;
   }
 
   return authStore.user?.username ?? "";
+});
+
+const avatarSrc = computed(() => {
+  if (profilePhotoUrl.value.trim() !== "") {
+    return profilePhotoUrl.value;
+  }
+
+  return `https://ui-avatars.com/api/?name=${displayName.value}`;
 });
 
 const navLinks = [
@@ -95,8 +111,24 @@ const navLinks = [
   { label: "Support", href: "#support", active: false },
 ];
 
+async function loadProfileData(): Promise<void> {
+  try {
+    const profileResponse = await profileApi.getMyProfile();
+    profileName.value = profileResponse.user.full_name ?? "";
+    profilePhotoUrl.value = profileResponse.profile.profile_photo ?? "";
+  } catch (error) {
+    console.error("Failed to load profile data:", error);
+  }
+}
+
 async function handleLogout() {
   await authStore.logout();
   router.push("/");
 }
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    loadProfileData();
+  }
+});
 </script>
