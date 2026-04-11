@@ -666,6 +666,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import {
@@ -680,6 +681,8 @@ const fallbackBanner =
   "https://images.unsplash.com/photo-1552820728-8ac41f1ce891?w=1200&h=300&fit=crop";
 const fallbackPhoto =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuABIm_EBNcnD3VD4Kzx94u-Xygh_j5rz1oLVliUnVMW9_jMksaj0PUuRYMnoNAG54zaZYbpY1gKlsDuQHnAoUG3DRzRf12Ophl-TyouOr6FhaHNnX_qMnJFs9k4ng-jfiBoIYj2hIgCWVGeQvQqAPsJB3D6kMDETjzVyWy21d76L_caeLpNeAdC8jT_NpFhcKXfOZdpmRlqR2Q2zQjcIwAzw3R_uBTfjLsJPwZaqSTvh5MK_naIq2lGHmiGJsi-gRAjxQBFenzJPBc";
+
+const router = useRouter();
 
 interface ProfileForm {
   fullName: string;
@@ -1188,7 +1191,13 @@ async function saveImageEdit(field: ProfileImageField): Promise<void> {
 
 function onGetVerified(): void {
   clearFeedback();
-  actionMessage.value = "Verification request flow will be available soon.";
+  const normalizedUserID = user.value.id.trim();
+  if (normalizedUserID === "") {
+    actionError.value = "Failed to start verification flow: user ID not found.";
+    return;
+  }
+
+  router.push(`/get-verified/${encodeURIComponent(normalizedUserID)}`);
 }
 
 async function loadProfile(): Promise<void> {

@@ -39,6 +39,12 @@ const router = createRouter({
       component: () => import("@/pages/ProductBuyPage.vue"),
       meta: { title: "Buy Product | Angpaoku" },
     },
+    {
+      path: "/get-verified/:userId",
+      name: "get-verified",
+      component: () => import("@/pages/GetVerifiedPage.vue"),
+      meta: { title: "Get Verified | Angpaoku", requiresAuth: true },
+    },
 
     // ---- Dashboard (Creator Portal) ----
     {

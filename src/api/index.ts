@@ -104,6 +104,8 @@ export interface AuthUser {
   full_name: string;
   phone_number?: string | null;
   is_verified: boolean;
+  verification_requested_at?: string | null;
+  verification_due_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -166,6 +168,16 @@ export type ProfileImageField = "profile_photo" | "banner_photo";
 export interface LoginPayload {
   email: string;
   password: string;
+}
+
+export interface GetVerifiedPayload {
+  full_name: string;
+  is_verified: boolean;
+}
+
+export interface GetVerifiedResponse {
+  user: AuthUser;
+  status: "idle" | "pending" | "verified";
 }
 
 export interface Category {
@@ -625,6 +637,30 @@ export const profileApi = {
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to update profile image"),
+      );
+    }
+  },
+};
+
+export const verificationApi = {
+  async submitGetVerified(
+    userID: string,
+    payload: GetVerifiedPayload,
+  ): Promise<GetVerifiedResponse> {
+    const normalizedUserID = userID.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    try {
+      const response = await apiClient.patch<ApiEnvelope<GetVerifiedResponse>>(
+        `/users/${encodeURIComponent(normalizedUserID)}/get-verified`,
+        payload,
+      );
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to submit get verified request"),
       );
     }
   },

@@ -136,12 +136,9 @@
           @click="goToProfile"
         >
           <div class="text-right hidden sm:block">
-            <p class="text-sm font-bold leading-tight">{{ user.name }}</p>
-            <p class="text-[10px] text-on-surface-variant font-medium">
-              {{ user.plan === "pro" ? "Pro Creator" : "Free Creator" }}
-            </p>
+            <p class="text-sm font-bold leading-tight">{{ displayName }}</p>
           </div>
-          <AppAvatar :src="user.avatar" :name="user.name" clickable />
+          <AppAvatar :src="avatarSrc" :name="displayName" clickable />
         </div>
       </div>
     </div>
@@ -149,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { notificationsApi, type NotificationRecord } from "@/api";
+import { notificationsApi, type NotificationRecord, profileApi } from "@/api";
 import { useDashboardStore } from "@/stores/dashboard";
 import { useAuthStore } from "@/stores/auth";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -172,7 +169,9 @@ withDefaults(defineProps<Props>(), {
 const router = useRouter();
 const store = useDashboardStore();
 const authStore = useAuthStore();
-const user = store.user;
+
+const profileName = ref("");
+const profilePhotoUrl = ref("");
 
 const isNotificationOpen = ref(false);
 const isNotificationLoading = ref(false);
@@ -182,6 +181,14 @@ const unreadCount = ref(0);
 const notificationDropdownRef = ref<HTMLElement | null>(null);
 
 const currentUserID = computed(() => authStore.user?.id?.trim() ?? "");
+
+const displayName = computed(() => {
+  return profileName.value.trim() !== "" ? profileName.value.trim() : "";
+});
+
+const avatarSrc = computed(() => {
+  return profilePhotoUrl.value.trim() !== "" ? profilePhotoUrl.value : "";
+});
 
 async function refreshNotifications(): Promise<void> {
   const userID = currentUserID.value;
@@ -207,6 +214,16 @@ async function refreshNotifications(): Promise<void> {
       error instanceof Error ? error.message : "Gagal memuat notifikasi.";
   } finally {
     isNotificationLoading.value = false;
+  }
+}
+
+async function loadProfileData(): Promise<void> {
+  try {
+    const profileResponse = await profileApi.getMyProfile();
+    profileName.value = profileResponse.user.full_name ?? "";
+    profilePhotoUrl.value = profileResponse.profile.profile_photo ?? "";
+  } catch (error) {
+    console.error("Failed to load profile data:", error);
   }
 }
 
@@ -293,6 +310,7 @@ watch(
 
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
+  loadProfileData();
 });
 
 onBeforeUnmount(() => {
