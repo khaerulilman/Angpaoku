@@ -82,7 +82,7 @@
             <ul v-else class="max-h-[420px] overflow-y-auto">
               <li
                 v-for="item in notifications"
-                :key="item.id"
+                :key="`${item.source ?? 'transaction'}-${item.id}`"
                 class="border-b border-outline-variant/10 last:border-b-0"
               >
                 <button
@@ -92,8 +92,14 @@
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
+                      <span
+                        class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                        :class="sourceBadgeClass(item.source)"
+                      >
+                        {{ sourceLabel(item.source) }}
+                      </span>
                       <p
-                        class="text-sm font-semibold text-on-surface"
+                        class="mt-1 text-sm font-semibold text-on-surface"
                         :class="{ 'opacity-70': item.is_read }"
                       >
                         {{ item.title }}
@@ -103,6 +109,12 @@
                         class="mt-1 text-[11px] font-semibold text-primary"
                       >
                         Total pembelian: x{{ item.purchase_count }}
+                      </p>
+                      <p
+                        v-if="item.source === 'donation' && (item.donation_count ?? 0) > 1"
+                        class="mt-1 text-[11px] font-semibold text-primary"
+                      >
+                        Total donasi hari ini: x{{ item.donation_count }}
                       </p>
                     </div>
                     <span
@@ -116,7 +128,19 @@
                     {{ item.message }}
                   </p>
                   <p
-                    v-if="item.product_name"
+                    v-if="item.source === 'donation' && item.donor_display_name"
+                    class="mt-1 text-xs font-medium text-on-surface"
+                  >
+                    Donor: {{ item.donor_display_name }}
+                  </p>
+                  <p
+                    v-if="item.source === 'donation' && item.amount !== null && item.amount !== undefined"
+                    class="mt-1 text-xs font-medium text-on-surface"
+                  >
+                    Amount: {{ formatCurrency(item.amount) }}
+                  </p>
+                  <p
+                    v-if="item.source !== 'donation' && item.product_name"
                     class="mt-1 text-xs font-medium text-on-surface"
                   >
                     Product: {{ item.product_name }}
@@ -146,7 +170,12 @@
 </template>
 
 <script setup lang="ts">
-import { notificationsApi, type NotificationRecord, profileApi } from "@/api";
+import {
+  donationNotificationsApi,
+  notificationsApi,
+  type NotificationRecord,
+  profileApi,
+} from "@/api";
 import { useDashboardStore } from "@/stores/dashboard";
 import { useAuthStore } from "@/stores/auth";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -176,11 +205,25 @@ const profilePhotoUrl = ref("");
 const isNotificationOpen = ref(false);
 const isNotificationLoading = ref(false);
 const notificationError = ref("");
-const notifications = ref<NotificationRecord[]>([]);
-const unreadCount = ref(0);
+const transactionNotifications = ref<NotificationRecord[]>([]);
+const donationNotifications = ref<NotificationRecord[]>([]);
+const unreadTransactionCount = ref(0);
+const unreadDonationCount = ref(0);
 const notificationDropdownRef = ref<HTMLElement | null>(null);
 
 const currentUserID = computed(() => authStore.user?.id?.trim() ?? "");
+const notifications = computed<NotificationRecord[]>(() => {
+  return [...transactionNotifications.value, ...donationNotifications.value].sort(
+    (left, right) => {
+      const leftTime = new Date(left.created_at).getTime();
+      const rightTime = new Date(right.created_at).getTime();
+      return rightTime - leftTime;
+    },
+  );
+});
+const unreadCount = computed(() => {
+  return unreadTransactionCount.value + unreadDonationCount.value;
+});
 
 const displayName = computed(() => {
   return profileName.value.trim() !== "" ? profileName.value.trim() : "";
@@ -193,8 +236,10 @@ const avatarSrc = computed(() => {
 async function refreshNotifications(): Promise<void> {
   const userID = currentUserID.value;
   if (userID === "") {
-    notifications.value = [];
-    unreadCount.value = 0;
+    transactionNotifications.value = [];
+    donationNotifications.value = [];
+    unreadTransactionCount.value = 0;
+    unreadDonationCount.value = 0;
     notificationError.value = "";
     return;
   }
@@ -202,19 +247,64 @@ async function refreshNotifications(): Promise<void> {
   isNotificationLoading.value = true;
   notificationError.value = "";
 
-  try {
-    const result = await notificationsApi.getByUser(userID, {
+  const [transactionResult, donationResult] = await Promise.allSettled([
+    notificationsApi.getByUser(userID, {
       limit: 12,
       offset: 0,
-    });
-    notifications.value = result.notifications ?? [];
-    unreadCount.value = Number(result.unread_count ?? 0);
-  } catch (error) {
-    notificationError.value =
-      error instanceof Error ? error.message : "Gagal memuat notifikasi.";
-  } finally {
-    isNotificationLoading.value = false;
+    }),
+    donationNotificationsApi.getByUser(userID, {
+      limit: 12,
+      offset: 0,
+    }),
+  ]);
+
+  const errors: string[] = [];
+
+  if (transactionResult.status === "fulfilled") {
+    transactionNotifications.value = (
+      transactionResult.value.notifications ?? []
+    ).map((item) => ({
+      ...item,
+      source: "transaction",
+    }));
+    unreadTransactionCount.value = Number(
+      transactionResult.value.unread_count ?? 0,
+    );
+  } else {
+    transactionNotifications.value = [];
+    unreadTransactionCount.value = 0;
+    errors.push(
+      transactionResult.reason instanceof Error
+        ? transactionResult.reason.message
+        : "Gagal memuat notifikasi transaksi.",
+    );
   }
+
+  if (donationResult.status === "fulfilled") {
+    donationNotifications.value = (donationResult.value.notifications ?? []).filter(
+      (item) => item.status.trim().toLowerCase() === "success",
+    );
+    unreadDonationCount.value = Number(donationResult.value.unread_count ?? 0);
+  } else {
+    donationNotifications.value = [];
+    unreadDonationCount.value = 0;
+    errors.push(
+      donationResult.reason instanceof Error
+        ? donationResult.reason.message
+        : "Gagal memuat notifikasi donasi.",
+    );
+  }
+
+  if (
+    errors.length > 0 &&
+    transactionResult.status === "rejected" &&
+    donationResult.status === "rejected"
+  ) {
+    notificationError.value = errors.join(" ");
+  } else {
+    notificationError.value = "";
+  }
+  isNotificationLoading.value = false;
 }
 
 async function loadProfileData(): Promise<void> {
@@ -237,19 +327,44 @@ async function markAllNotificationsAsRead(): Promise<void> {
     return;
   }
 
-  try {
-    await notificationsApi.markAllAsRead(userID);
-    unreadCount.value = 0;
-    notifications.value = notifications.value.map((item) => ({
+  const [transactionResult, donationResult] = await Promise.allSettled([
+    notificationsApi.markAllAsRead(userID),
+    donationNotificationsApi.markAllAsRead(userID),
+  ]);
+
+  const errors: string[] = [];
+
+  if (transactionResult.status === "fulfilled") {
+    unreadTransactionCount.value = 0;
+    transactionNotifications.value = transactionNotifications.value.map(
+      (item) => ({
+        ...item,
+        is_read: true,
+      }),
+    );
+  } else {
+    errors.push(
+      transactionResult.reason instanceof Error
+        ? transactionResult.reason.message
+        : "Gagal menandai notifikasi transaksi sebagai dibaca.",
+    );
+  }
+
+  if (donationResult.status === "fulfilled") {
+    unreadDonationCount.value = 0;
+    donationNotifications.value = donationNotifications.value.map((item) => ({
       ...item,
       is_read: true,
     }));
-  } catch (error) {
-    notificationError.value =
-      error instanceof Error
-        ? error.message
-        : "Gagal menandai semua notifikasi sebagai dibaca.";
+  } else {
+    errors.push(
+      donationResult.reason instanceof Error
+        ? donationResult.reason.message
+        : "Gagal menandai notifikasi donasi sebagai dibaca.",
+    );
   }
+
+  notificationError.value = errors.join(" ");
 }
 
 async function toggleNotifications(): Promise<void> {
@@ -271,6 +386,20 @@ function statusBadgeClass(status: string): string {
   return "bg-slate-100 text-slate-700";
 }
 
+function sourceBadgeClass(source: NotificationRecord["source"]): string {
+  if (source === "donation") {
+    return "bg-fuchsia-100 text-fuchsia-700";
+  }
+  return "bg-cyan-100 text-cyan-700";
+}
+
+function sourceLabel(source: NotificationRecord["source"]): string {
+  if (source === "donation") {
+    return "Donation";
+  }
+  return "Transaction";
+}
+
 function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -281,6 +410,14 @@ function formatDateTime(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function handleDocumentClick(event: MouseEvent): void {

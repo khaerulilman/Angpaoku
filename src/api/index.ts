@@ -504,6 +504,12 @@ export interface NotificationRecord {
   order_id?: string | null;
   status: string;
   purchase_count?: number;
+  donation_count?: number;
+  notification_date?: string;
+  donor_display_name?: string | null;
+  donor_email?: string | null;
+  amount?: number | null;
+  source?: "transaction" | "donation";
   created_at: string;
   updated_at: string;
 }
@@ -513,6 +519,10 @@ export interface NotificationListResponse {
   unread_count: number;
   limit: number;
   offset: number;
+}
+
+export interface DonationNotificationRecord extends NotificationRecord {
+  source?: "donation";
 }
 
 function mapReadProductToProductRecord(
@@ -1360,6 +1370,119 @@ export const notificationsApi = {
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to mark all notifications as read"),
+      );
+    }
+  },
+};
+
+export const donationNotificationsApi = {
+  async getByUser(
+    userID: string,
+    params?: { limit?: number; offset?: number },
+  ): Promise<NotificationListResponse> {
+    const normalizedUserID = userID.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    const limit = params?.limit ?? 20;
+    const offset = params?.offset ?? 0;
+
+    try {
+      const response =
+        await donationsApiClient.get<ApiEnvelope<NotificationListResponse>>(
+          "/notifications",
+          {
+            headers: {
+              "X-User-ID": normalizedUserID,
+            },
+            params: {
+              user_id: normalizedUserID,
+              limit,
+              offset,
+            },
+          },
+        );
+
+      const payload = unwrapData(response.data);
+      return {
+        ...payload,
+        notifications: (payload.notifications ?? []).map((item) => ({
+          ...item,
+          source: "donation" as const,
+          status: String(item.status ?? "").toLowerCase(),
+          donation_count:
+            item.donation_count === null || item.donation_count === undefined
+              ? undefined
+              : Number(item.donation_count),
+          amount:
+            item.amount === null || item.amount === undefined
+              ? null
+              : Number(item.amount),
+        })),
+      };
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load donation notifications"),
+      );
+    }
+  },
+
+  async markAsRead(userID: string, notificationID: string): Promise<void> {
+    const normalizedUserID = userID.trim();
+    const normalizedNotificationID = notificationID.trim();
+    if (normalizedUserID === "" || normalizedNotificationID === "") {
+      throw new Error("invalid notification input");
+    }
+
+    try {
+      await donationsApiClient.patch(
+        `/notifications/${encodeURIComponent(normalizedNotificationID)}/read`,
+        {},
+        {
+          headers: {
+            "X-User-ID": normalizedUserID,
+          },
+          params: {
+            user_id: normalizedUserID,
+          },
+        },
+      );
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(
+          error,
+          "failed to mark donation notification as read",
+        ),
+      );
+    }
+  },
+
+  async markAllAsRead(userID: string): Promise<void> {
+    const normalizedUserID = userID.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    try {
+      await donationsApiClient.patch(
+        "/notifications/read",
+        {},
+        {
+          headers: {
+            "X-User-ID": normalizedUserID,
+          },
+          params: {
+            user_id: normalizedUserID,
+          },
+        },
+      );
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(
+          error,
+          "failed to mark all donation notifications as read",
+        ),
       );
     }
   },
