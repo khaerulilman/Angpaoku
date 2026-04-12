@@ -344,17 +344,15 @@
                   </p>
                 </div>
 
-                <a
-                  :href="product.product_link"
+                <button
                   class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary transition-colors hover:brightness-95"
-                  rel="noopener noreferrer"
-                  target="_blank"
+                  @click="router.push(`/product-buy/${product.id}`)"
                 >
                   Open
                   <span class="material-symbols-outlined text-sm"
-                    >open_in_new</span
+                    >arrow_forward</span
                   >
-                </a>
+                </button>
               </div>
             </div>
           </article>
@@ -366,7 +364,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   storePreviewApi,
   type ProductRecord,
@@ -374,6 +372,7 @@ import {
 } from "@/api";
 
 const route = useRoute();
+const router = useRouter();
 
 const isLoading = ref(false);
 const errorMessage = ref("");
