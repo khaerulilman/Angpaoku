@@ -9,6 +9,7 @@ import type {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const READ_BASE_URL = import.meta.env.VITE_STORE_PRODUCT_BASE_URL;
 const PRODUCT_BUY_URL = import.meta.env.VITE_PRODUCT_BUY_URL;
+const DONATIONS_URL = import.meta.env.VITE_DONATIONS_API_URL;
 
 function buildProductBuyBaseURL(rawBaseURL?: string): string {
   const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
@@ -23,7 +24,21 @@ function buildProductBuyBaseURL(rawBaseURL?: string): string {
   return `${normalizedBaseURL}/api/v1`;
 }
 
+function buildDonationsBaseURL(rawBaseURL?: string): string {
+  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
+  if (normalizedBaseURL === "") {
+    return "/api/v1";
+  }
+
+  if (normalizedBaseURL.endsWith("/api/v1")) {
+    return normalizedBaseURL;
+  }
+
+  return `${normalizedBaseURL}/api/v1`;
+}
+
 const PRODUCT_BUY_BASE_URL = buildProductBuyBaseURL(PRODUCT_BUY_URL);
+const DONATIONS_BASE_URL = buildDonationsBaseURL(DONATIONS_URL);
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
@@ -42,6 +57,14 @@ const readApiClient = axios.create({
 
 const productBuyApiClient = axios.create({
   baseURL: PRODUCT_BUY_BASE_URL,
+  withCredentials: false,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const donationsApiClient = axios.create({
+  baseURL: DONATIONS_BASE_URL,
   withCredentials: false,
   headers: {
     "Content-Type": "application/json",
@@ -374,6 +397,81 @@ export interface TransactionCheckoutResult {
 export interface TransactionStatusResponse {
   transaction: CheckoutTransaction;
   payment_status: string;
+}
+
+export interface PublicDonationCreator {
+  user_id: string;
+  username: string;
+  full_name: string;
+  profile_photo: string;
+  bio: string;
+  is_verified: boolean;
+}
+
+export interface PublicDonationSummary {
+  total_amount: number;
+  total_donations: number;
+  unique_donors: number;
+}
+
+export interface PublicDonationPageResponse {
+  creator: PublicDonationCreator;
+  summary: PublicDonationSummary;
+}
+
+export interface CreateDonationPayload {
+  username: string;
+  display_name: string;
+  email: string;
+  amount: number;
+  message?: string;
+}
+
+export interface DonationCheckoutTransaction {
+  id: string;
+  order_id: string;
+  recipient_user_id: string;
+  recipient_username: string;
+  recipient_full_name: string;
+  donor_display_name: string;
+  donor_email: string;
+  amount: number;
+  message: string;
+  payment_type: string;
+  transaction_status: string;
+  fraud_status?: string | null;
+  snap_token: string;
+  snap_redirect_url: string;
+  expired_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DonationCheckoutResult {
+  donation: DonationCheckoutTransaction;
+  payment_status: string;
+  midtrans_client_key: string;
+}
+
+export interface DonationStatusResponse {
+  donation: DonationCheckoutTransaction;
+  payment_status: string;
+}
+
+export interface DonationHistorySummary {
+  total_amount: number;
+  total_donations: number;
+  unique_donors: number;
+}
+
+export interface DonationHistoryItem extends DonationCheckoutTransaction {}
+
+export interface DonationHistoryResult {
+  summary: DonationHistorySummary;
+  donations: DonationHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface CreateProductPayload {
@@ -998,6 +1096,137 @@ export const buyOrderApi = {
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to load transaction status"),
+      );
+    }
+  },
+};
+
+export const donationsApi = {
+  async getPublicByUsername(username: string): Promise<PublicDonationPageResponse> {
+    const normalizedUsername = username.trim().toLowerCase();
+    if (normalizedUsername === "") {
+      throw new Error("invalid username");
+    }
+
+    try {
+      const response = await donationsApiClient.get<
+        ApiEnvelope<{
+          creator: PublicDonationCreator;
+          summary: PublicDonationSummary;
+        }>
+      >(`/donations/${encodeURIComponent(normalizedUsername)}`);
+
+      const payload = unwrapData(response.data);
+      return {
+        creator: payload.creator,
+        summary: {
+          total_amount: Number(payload.summary?.total_amount ?? 0),
+          total_donations: Number(payload.summary?.total_donations ?? 0),
+          unique_donors: Number(payload.summary?.unique_donors ?? 0),
+        },
+      };
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load donation page"),
+      );
+    }
+  },
+
+  async createTransaction(
+    payload: CreateDonationPayload,
+  ): Promise<DonationCheckoutResult> {
+    try {
+      const response = await donationsApiClient.post<
+        ApiEnvelope<{
+          donation: DonationCheckoutTransaction;
+          payment_status: string;
+          midtrans_client_key: string;
+        }>
+      >("/donations", payload);
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to create donation transaction"),
+      );
+    }
+  },
+
+  async getDonationStatus(orderID: string): Promise<DonationStatusResponse> {
+    const normalizedOrderID = orderID.trim();
+    if (normalizedOrderID === "") {
+      throw new Error("invalid order id");
+    }
+
+    try {
+      const response = await donationsApiClient.get<
+        ApiEnvelope<{
+          donation: DonationCheckoutTransaction;
+          payment_status: string;
+        }>
+      >(`/donations/orders/${encodeURIComponent(normalizedOrderID)}`);
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load donation status"),
+      );
+    }
+  },
+
+  async getHistory(params: {
+    user_id: string;
+    page?: number;
+    limit?: number;
+  }): Promise<DonationHistoryResult> {
+    const normalizedUserID = params.user_id.trim();
+    if (normalizedUserID === "") {
+      throw new Error("invalid user id");
+    }
+
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 20;
+
+    try {
+      const response = await donationsApiClient.get<
+        ApiEnvelope<{
+          summary: DonationHistorySummary;
+          donations: DonationHistoryItem[];
+          page?: number;
+          limit?: number;
+        }>
+      >("/donations/history", {
+        params: {
+          user_id: normalizedUserID,
+          page,
+          limit,
+        },
+      });
+
+      const payload = unwrapData(response.data);
+      const summary = payload?.summary ?? {
+        total_amount: 0,
+        total_donations: 0,
+        unique_donors: 0,
+      };
+
+      const donations = (payload?.donations ?? []).map((item) => ({
+        ...item,
+        amount: Number(item.amount ?? 0),
+      }));
+
+      return {
+        summary: {
+          total_amount: Number(summary.total_amount ?? 0),
+          total_donations: Number(summary.total_donations ?? 0),
+          unique_donors: Number(summary.unique_donors ?? 0),
+        },
+        donations,
+        total: Number(summary.total_donations ?? donations.length),
+        page: Number(payload?.page ?? page),
+        limit: Number(payload?.limit ?? limit),
+      };
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load donation history"),
       );
     }
   },

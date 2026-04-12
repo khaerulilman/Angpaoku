@@ -40,10 +40,10 @@ const router = createRouter({
       meta: { title: "Buy Product | Angpaoku" },
     },
     {
-      path: "/donations/khaerulilman",
-      name: "donation-gift-khaerulilman",
+      path: "/donations/:username",
+      name: "donation-gift",
       component: () => import("@/pages/DonationGiftPage.vue"),
-      meta: { title: "Donations | Khaerul Ilman | Angpaoku" },
+      meta: { title: "Donations | Angpaoku" },
     },
     {
       path: "/get-verified/:userId",
@@ -168,6 +168,14 @@ router.beforeEach(async (to) => {
 
 // Dynamic page title
 router.afterEach((to) => {
+  if (to.name === "donation-gift") {
+    const username = String(to.params.username ?? "").trim();
+    if (username) {
+      document.title = `Donations | @${username} | Angpaoku`;
+      return;
+    }
+  }
+
   const title = to.meta.title as string | undefined;
   if (title) document.title = title;
 });
