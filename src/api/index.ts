@@ -217,6 +217,11 @@ export interface CreateCategoryPayload {
   slug?: string;
 }
 
+export interface UpdateCategoryPayload {
+  name: string;
+  slug?: string;
+}
+
 export type ProductPricingType = "paid" | "free";
 export type ProductVisibility = "draft" | "live";
 
@@ -867,10 +872,13 @@ export const transactionsApi = {
 };
 
 function toTransactionHistoryResult(
-  payload: {
-    summary?: ReadTransactionSummary;
-    transactions?: TransactionHistoryItem[];
-  } | null | undefined,
+  payload:
+    | {
+        summary?: ReadTransactionSummary;
+        transactions?: TransactionHistoryItem[];
+      }
+    | null
+    | undefined,
   page: number,
   limit: number,
 ): TransactionHistoryResult {
@@ -922,6 +930,30 @@ export const categoriesApi = {
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to create category"),
+      );
+    }
+  },
+
+  async update(id: string, payload: UpdateCategoryPayload): Promise<Category> {
+    try {
+      const response = await apiClient.put<ApiEnvelope<{ category: Category }>>(
+        `/categories/${encodeURIComponent(id)}`,
+        payload,
+      );
+      return unwrapData(response.data).category;
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to update category"),
+      );
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`/categories/${encodeURIComponent(id)}`);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to delete category"),
       );
     }
   },
@@ -1113,7 +1145,9 @@ export const buyOrderApi = {
 };
 
 export const donationsApi = {
-  async getPublicByUsername(username: string): Promise<PublicDonationPageResponse> {
+  async getPublicByUsername(
+    username: string,
+  ): Promise<PublicDonationPageResponse> {
     const normalizedUsername = username.trim().toLowerCase();
     if (normalizedUsername === "") {
       throw new Error("invalid username");
@@ -1301,20 +1335,18 @@ export const notificationsApi = {
     const offset = params?.offset ?? 0;
 
     try {
-      const response =
-        await productBuyApiClient.get<ApiEnvelope<NotificationListResponse>>(
-          "/notifications",
-          {
-            headers: {
-              "X-User-ID": normalizedUserID,
-            },
-            params: {
-              user_id: normalizedUserID,
-              limit,
-              offset,
-            },
-          },
-        );
+      const response = await productBuyApiClient.get<
+        ApiEnvelope<NotificationListResponse>
+      >("/notifications", {
+        headers: {
+          "X-User-ID": normalizedUserID,
+        },
+        params: {
+          user_id: normalizedUserID,
+          limit,
+          offset,
+        },
+      });
       return unwrapData(response.data);
     } catch (error) {
       throw new Error(
@@ -1371,7 +1403,10 @@ export const notificationsApi = {
       );
     } catch (error) {
       throw new Error(
-        extractApiErrorMessage(error, "failed to mark all notifications as read"),
+        extractApiErrorMessage(
+          error,
+          "failed to mark all notifications as read",
+        ),
       );
     }
   },
@@ -1391,20 +1426,18 @@ export const donationNotificationsApi = {
     const offset = params?.offset ?? 0;
 
     try {
-      const response =
-        await donationsApiClient.get<ApiEnvelope<NotificationListResponse>>(
-          "/notifications",
-          {
-            headers: {
-              "X-User-ID": normalizedUserID,
-            },
-            params: {
-              user_id: normalizedUserID,
-              limit,
-              offset,
-            },
-          },
-        );
+      const response = await donationsApiClient.get<
+        ApiEnvelope<NotificationListResponse>
+      >("/notifications", {
+        headers: {
+          "X-User-ID": normalizedUserID,
+        },
+        params: {
+          user_id: normalizedUserID,
+          limit,
+          offset,
+        },
+      });
 
       const payload = unwrapData(response.data);
       return {

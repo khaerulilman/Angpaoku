@@ -100,26 +100,38 @@
             <button
               type="button"
               class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-bold text-on-surface hover:bg-surface-container-low"
-              @click="showCreateCategoryCard = !showCreateCategoryCard"
+              @click="showManageCategoryCard = !showManageCategoryCard"
             >
-              <span class="material-symbols-outlined text-lg">add</span>
-              Add Category
+              <span class="material-symbols-outlined text-lg">category</span>
+              Manage Category
             </button>
           </div>
         </div>
       </AppCard>
 
       <AppCard
-        v-if="showCreateCategoryCard"
+        v-if="showManageCategoryCard"
         class="mb-6 border border-primary/20 p-6"
         shadow="sm"
       >
-        <h2 class="mb-4 text-lg font-headline font-bold text-on-surface">
-          Create Category
-        </h2>
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-lg font-headline font-bold text-on-surface">
+            Manage Categories
+          </h2>
+          <button
+            type="button"
+            class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold text-white hover:bg-primary/90"
+            @click="startCreateCategory"
+          >
+            <span class="material-symbols-outlined text-sm">add</span>
+            Add New
+          </button>
+        </div>
 
+        <!-- Inline create / edit form -->
         <form
-          class="grid grid-cols-1 gap-4 md:grid-cols-3"
+          v-if="showCategoryForm"
+          class="mb-5 grid grid-cols-1 gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low/40 p-4 md:grid-cols-3"
           @submit.prevent="submitCategory"
         >
           <div class="space-y-2 md:col-span-1">
@@ -151,27 +163,101 @@
           <div class="flex items-end gap-3 md:col-span-1">
             <button
               type="submit"
-              :disabled="isCreatingCategory"
+              :disabled="isSubmittingCategory"
               class="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {{ isCreatingCategory ? "Creating..." : "Create Category" }}
+              {{
+                isSubmittingCategory
+                  ? editingCategoryId
+                    ? "Saving..."
+                    : "Creating..."
+                  : editingCategoryId
+                    ? "Save Changes"
+                    : "Create Category"
+              }}
             </button>
             <button
               type="button"
-              :disabled="isCreatingCategory"
+              :disabled="isSubmittingCategory"
               class="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-outline-variant/30 bg-white px-4 text-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60"
-              @click="cancelCreateCategory"
+              @click="cancelCategoryForm"
             >
               Cancel
             </button>
           </div>
+
+          <p
+            v-if="categoryError"
+            class="md:col-span-3 mt-1 text-sm font-medium text-red-600"
+          >
+            {{ categoryError }}
+          </p>
+          <p
+            v-if="categorySuccess"
+            class="md:col-span-3 mt-1 text-sm font-medium text-emerald-600"
+          >
+            {{ categorySuccess }}
+          </p>
         </form>
 
-        <p v-if="categoryError" class="mt-3 text-sm font-medium text-red-600">
+        <!-- Category list -->
+        <div
+          v-if="categories.length === 0"
+          class="py-6 text-center text-sm text-on-surface-variant"
+        >
+          No categories yet. Click "Add New" to create one.
+        </div>
+        <ul v-else class="divide-y divide-outline-variant/10">
+          <li
+            v-for="cat in categories"
+            :key="cat.id"
+            class="flex items-center justify-between gap-3 py-3 px-1"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-on-surface">
+                {{ cat.name }}
+              </p>
+              <p class="truncate text-xs text-on-surface-variant">
+                {{ cat.slug }}
+              </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary"
+                title="Edit category"
+                @click="startEditCategory(cat)"
+              >
+                <span class="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+              <button
+                type="button"
+                :disabled="isDeletingCategory === cat.id"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Delete category"
+                @click="deleteCategory(cat)"
+              >
+                <span
+                  v-if="isDeletingCategory === cat.id"
+                  class="material-symbols-outlined text-[18px] animate-spin"
+                  >progress_activity</span
+                >
+                <span v-else class="material-symbols-outlined text-[18px]"
+                  >close</span
+                >
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <p
+          v-if="!showCategoryForm && categoryError"
+          class="mt-3 text-sm font-medium text-red-600"
+        >
           {{ categoryError }}
         </p>
         <p
-          v-if="categorySuccess"
+          v-if="!showCategoryForm && categorySuccess"
           class="mt-3 text-sm font-medium text-emerald-600"
         >
           {{ categorySuccess }}
@@ -542,15 +628,18 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const isLoadingProducts = ref(false);
-const isCreatingCategory = ref(false);
+const isSubmittingCategory = ref(false);
 const isDeletingProduct = ref(false);
+const isDeletingCategory = ref<string | null>(null);
 const showDeleteConfirm = ref(false);
 const categoryError = ref("");
 const categorySuccess = ref("");
 const actionError = ref("");
 const actionMessage = ref("");
 const deleteError = ref("");
-const showCreateCategoryCard = ref(false);
+const showManageCategoryCard = ref(false);
+const showCategoryForm = ref(false);
+const editingCategoryId = ref<string | null>(null);
 
 const products = ref<ProductRecord[]>([]);
 const categories = ref<Category[]>([]);
@@ -631,8 +720,25 @@ function getFinalPrice(product: ProductRecord): number {
   return Math.max(discounted, 0);
 }
 
-function cancelCreateCategory(): void {
-  showCreateCategoryCard.value = false;
+function startCreateCategory(): void {
+  editingCategoryId.value = null;
+  categoryForm.value = { name: "", slug: "" };
+  categoryError.value = "";
+  categorySuccess.value = "";
+  showCategoryForm.value = true;
+}
+
+function startEditCategory(cat: Category): void {
+  editingCategoryId.value = cat.id;
+  categoryForm.value = { name: cat.name, slug: cat.slug };
+  categoryError.value = "";
+  categorySuccess.value = "";
+  showCategoryForm.value = true;
+}
+
+function cancelCategoryForm(): void {
+  showCategoryForm.value = false;
+  editingCategoryId.value = null;
   categoryForm.value = { name: "", slug: "" };
   categoryError.value = "";
   categorySuccess.value = "";
@@ -683,21 +789,50 @@ async function submitCategory(): Promise<void> {
     return;
   }
 
-  isCreatingCategory.value = true;
+  isSubmittingCategory.value = true;
   try {
-    const created = await categoriesApi.create({
-      name: categoryForm.value.name.trim(),
-      slug: categoryForm.value.slug.trim() || undefined,
-    });
-
-    categories.value = [created, ...categories.value];
+    if (editingCategoryId.value) {
+      const updated = await categoriesApi.update(editingCategoryId.value, {
+        name: categoryForm.value.name.trim(),
+        slug: categoryForm.value.slug.trim() || undefined,
+      });
+      const idx = categories.value.findIndex((c) => c.id === updated.id);
+      if (idx !== -1) {
+        categories.value[idx] = updated;
+      }
+      categorySuccess.value = "Category berhasil diupdate.";
+    } else {
+      const created = await categoriesApi.create({
+        name: categoryForm.value.name.trim(),
+        slug: categoryForm.value.slug.trim() || undefined,
+      });
+      categories.value = [created, ...categories.value];
+      categorySuccess.value = "Category berhasil dibuat.";
+    }
+    showCategoryForm.value = false;
+    editingCategoryId.value = null;
     categoryForm.value = { name: "", slug: "" };
-    categorySuccess.value = "Category berhasil dibuat.";
   } catch (error) {
     categoryError.value =
-      error instanceof Error ? error.message : "Gagal membuat category.";
+      error instanceof Error ? error.message : "Gagal menyimpan category.";
   } finally {
-    isCreatingCategory.value = false;
+    isSubmittingCategory.value = false;
+  }
+}
+
+async function deleteCategory(cat: Category): Promise<void> {
+  categoryError.value = "";
+  categorySuccess.value = "";
+  isDeletingCategory.value = cat.id;
+  try {
+    await categoriesApi.delete(cat.id);
+    categories.value = categories.value.filter((c) => c.id !== cat.id);
+    categorySuccess.value = `Category "${cat.name}" berhasil dihapus.`;
+  } catch (error) {
+    categoryError.value =
+      error instanceof Error ? error.message : "Gagal menghapus category.";
+  } finally {
+    isDeletingCategory.value = null;
   }
 }
 
