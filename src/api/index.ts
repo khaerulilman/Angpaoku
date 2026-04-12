@@ -250,6 +250,18 @@ export interface ProductRecord {
 
 export interface StorePreviewProfile {
   username: string;
+  full_name: string;
+  bio: string;
+  tagline: string;
+  location: string;
+  profile_photo: string;
+  banner_photo: string;
+  website: string;
+  youtube_url: string;
+  instagram_username: string;
+  tiktok_username: string;
+  x_username: string;
+  discord_link: string;
 }
 
 export interface StorePreviewData {
@@ -276,6 +288,18 @@ interface ReadPublicProduct {
 
 interface ReadPublicProfile {
   username: string;
+  full_name?: string;
+  bio?: string;
+  tagline?: string;
+  location?: string;
+  profile_photo?: string;
+  banner_photo?: string;
+  website?: string;
+  youtube_url?: string;
+  instagram_username?: string;
+  tiktok_username?: string;
+  x_username?: string;
+  discord_link?: string;
 }
 
 interface ReadStorePreviewData {
@@ -1054,6 +1078,18 @@ export const storePreviewApi = {
         username: normalizedUsername,
         profile: {
           username: payload?.profile?.username ?? normalizedUsername,
+          full_name: payload?.profile?.full_name ?? "",
+          bio: payload?.profile?.bio ?? "",
+          tagline: payload?.profile?.tagline ?? "",
+          location: payload?.profile?.location ?? "",
+          profile_photo: payload?.profile?.profile_photo ?? "",
+          banner_photo: payload?.profile?.banner_photo ?? "",
+          website: payload?.profile?.website ?? "",
+          youtube_url: payload?.profile?.youtube_url ?? "",
+          instagram_username: payload?.profile?.instagram_username ?? "",
+          tiktok_username: payload?.profile?.tiktok_username ?? "",
+          x_username: payload?.profile?.x_username ?? "",
+          discord_link: payload?.profile?.discord_link ?? "",
         },
         products: (payload?.products ?? []).map(mapReadProductToProductRecord),
       };
