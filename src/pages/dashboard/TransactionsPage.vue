@@ -6,7 +6,7 @@
     />
 
     <div class="pt-4 px-10 pb-20 mx-auto">
-      <div class="space-y-1 mb-6">
+      <div class="space-y-1 mb-4">
         <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
           Transaction Activity
         </h2>
@@ -15,7 +15,12 @@
         </p>
       </div>
 
-      <div class="transactions-summary-grid grid grid-cols-1 gap-4 md:grid-cols-2 mt-6">
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-4" />
+
+      <div
+        class="transactions-summary-grid grid grid-cols-1 gap-4 md:grid-cols-2 mt-6"
+      >
         <AppCard class="p-6 h-full" shadow="angpao">
           <p
             class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
@@ -50,7 +55,10 @@
       </p>
 
       <AppCard shadow="angpao" class="overflow-hidden mt-6">
-        <div v-if="isLoading" class="px-6 py-10 text-sm text-on-surface-variant">
+        <div
+          v-if="isLoading"
+          class="px-6 py-10 text-sm text-on-surface-variant"
+        >
           Loading transaction history...
         </div>
 
@@ -134,7 +142,8 @@
         >
           <p class="text-xs text-on-surface-variant font-medium">
             Showing {{ transactions.length }} of
-            {{ formatNumber(summary.total_transactions) }} successful transactions
+            {{ formatNumber(summary.total_transactions) }} successful
+            transactions
           </p>
         </div>
       </AppCard>
@@ -146,6 +155,7 @@
 import { onMounted, ref } from "vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import {
   transactionsApi,
   type TransactionHistoryItem,

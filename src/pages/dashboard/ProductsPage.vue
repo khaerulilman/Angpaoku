@@ -25,6 +25,9 @@
         >
       </div>
 
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-4" />
+
       <p v-if="actionError" class="mb-4 text-sm font-medium text-red-600">
         {{ actionError }}
       </p>
@@ -436,9 +439,7 @@
                       :disabled="isDeletingProduct"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                       :class="
-                        isDeletingProduct
-                          ? 'cursor-not-allowed opacity-60'
-                          : ''
+                        isDeletingProduct ? 'cursor-not-allowed opacity-60' : ''
                       "
                       title="Delete product"
                       @click="openDeleteConfirm(product)"
@@ -528,14 +529,17 @@ import { useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import AppButton from "@/components/common/AppButton.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import {
   categoriesApi,
   productsApi,
   type Category,
   type ProductRecord,
 } from "@/api";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const isLoadingProducts = ref(false);
 const isCreatingCategory = ref(false);
@@ -600,6 +604,11 @@ function resetFilters(): void {
 }
 
 function goToAddProduct(): void {
+  if (!authStore.user?.is_verified) {
+    actionError.value =
+      'Akun kamu harus diverifikasi terlebih dahulu sebelum bisa menambahkan produk digital. Klik "Verifikasi Sekarang" di panel peringatan di atas.';
+    return;
+  }
   router.push({ name: "add-product" });
 }
 

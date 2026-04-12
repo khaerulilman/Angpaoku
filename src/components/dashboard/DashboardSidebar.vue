@@ -36,11 +36,6 @@
 
     <!-- Bottom Actions (always pinned at bottom) -->
     <div class="mt-auto flex flex-shrink-0 flex-col gap-4 pt-6">
-      <button
-        class="bg-primary text-white rounded-full py-3 px-6 text-sm font-bold shadow-angpao-lg hover:opacity-90 transition-opacity"
-      >
-        Upgrade Plan
-      </button>
       <div class="space-y-1 border-t border-outline-variant/20 pt-4">
         <a
           href="#"

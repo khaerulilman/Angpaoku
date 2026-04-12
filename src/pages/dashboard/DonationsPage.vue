@@ -6,14 +6,18 @@
     />
 
     <div class="pt-4 px-10 pb-20 mx-auto">
-      <div class="space-y-1 mb-6">
+      <div class="space-y-1 mb-4">
         <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
           Donations Received
         </h2>
         <p class="text-on-surface-variant max-w-md">
-          Track every donation sent to your page and monitor successful payments.
+          Track every donation sent to your page and monitor successful
+          payments.
         </p>
       </div>
+
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-4" />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3 mt-6">
         <AppCard class="p-6 h-full" shadow="angpao">
@@ -64,7 +68,10 @@
       </p>
 
       <AppCard shadow="angpao" class="overflow-hidden mt-6">
-        <div v-if="isLoading" class="px-6 py-10 text-sm text-on-surface-variant">
+        <div
+          v-if="isLoading"
+          class="px-6 py-10 text-sm text-on-surface-variant"
+        >
           Loading donations...
         </div>
 
@@ -98,6 +105,11 @@
                   class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
                 >
                   Amount
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
+                >
+                  Points
                 </th>
                 <th
                   class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
@@ -136,8 +148,13 @@
                 <td class="px-6 py-5 text-right font-bold text-on-surface">
                   {{ formatIDR(donation.amount) }}
                 </td>
+                <td class="px-6 py-5 text-right font-bold text-on-surface">
+                  {{ formatNumber(donation.points ?? 0) }}
+                </td>
                 <td class="px-6 py-5 text-right">
-                  <AppBadge :variant="badgeVariant(donation.transaction_status)">
+                  <AppBadge
+                    :variant="badgeVariant(donation.transaction_status)"
+                  >
                     {{ normalizeStatusLabel(donation.transaction_status) }}
                   </AppBadge>
                 </td>
@@ -165,6 +182,7 @@ import { onMounted, ref } from "vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import AppBadge from "@/components/common/AppBadge.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import {
   donationsApi,
   type DonationHistoryItem,
@@ -227,12 +245,18 @@ function normalizeStatusLabel(status: string): string {
   return normalized;
 }
 
-function badgeVariant(status: string): "success" | "warning" | "danger" | "info" {
+function badgeVariant(
+  status: string,
+): "success" | "warning" | "danger" | "info" {
   const normalized = normalizeStatusLabel(status);
   if (normalized === "success" || normalized === "settlement") {
     return "success";
   }
-  if (normalized === "failed" || normalized === "deny" || normalized === "cancel") {
+  if (
+    normalized === "failed" ||
+    normalized === "deny" ||
+    normalized === "cancel"
+  ) {
     return "danger";
   }
   if (normalized === "expired" || normalized === "expire") {

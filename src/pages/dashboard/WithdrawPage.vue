@@ -7,7 +7,7 @@
 
     <div class="p-8 max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="mb-12">
+      <div class="mb-6">
         <h1
           class="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2"
         >
@@ -17,6 +17,9 @@
           Cash out your earnings instantly. No waiting, no hidden fees.
         </p>
       </div>
+
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-8" />
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left: Withdraw Form -->
@@ -171,6 +174,7 @@ import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import AppButton from "@/components/common/AppButton.vue";
 import AppBadge from "@/components/common/AppBadge.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 
 const selectedMethod = ref("bank");
 

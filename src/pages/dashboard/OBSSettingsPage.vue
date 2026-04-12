@@ -22,12 +22,21 @@
           </p>
         </div>
         <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-          <AppButton class="w-full sm:w-auto" variant="secondary" size="md" icon="refresh"
+          <AppButton
+            class="w-full sm:w-auto"
+            variant="secondary"
+            size="md"
+            icon="refresh"
             >Reset</AppButton
           >
-          <AppButton class="w-full sm:w-auto" variant="brand" size="md">Save Changes</AppButton>
+          <AppButton class="w-full sm:w-auto" variant="brand" size="md"
+            >Save Changes</AppButton
+          >
         </div>
       </div>
+
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-6" />
 
       <!-- Main Grid -->
       <div class="obs-layout-grid">
@@ -240,7 +249,9 @@
                     >
                       Angpao Received!
                     </p>
-                    <p class="text-on-surface-variant font-bold text-xs sm:text-sm mt-1">
+                    <p
+                      class="text-on-surface-variant font-bold text-xs sm:text-sm mt-1"
+                    >
                       CreatorFan99 sent
                       <span class="text-on-surface">IDR 50.000</span>
                     </p>
@@ -305,6 +316,7 @@
 import { ref } from "vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppButton from "@/components/common/AppButton.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 
 const selectedColor = ref("#b7102a");
 const selectedAnimation = ref("slide_up");

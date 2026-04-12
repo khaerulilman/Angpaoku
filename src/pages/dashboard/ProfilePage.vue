@@ -7,7 +7,7 @@
 
     <div class="mx-auto w-full p-8">
       <div
-        class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+        class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
       >
         <div>
           <h1
@@ -21,6 +21,9 @@
           </p>
         </div>
       </div>
+
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-6" />
 
       <div
         v-if="isLoading"
@@ -669,6 +672,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import {
   profileApi,
   type AuthUser,

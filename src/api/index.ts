@@ -436,6 +436,7 @@ export interface DonationCheckoutTransaction {
   donor_display_name: string;
   donor_email: string;
   amount: number;
+  points: number;
   message: string;
   payment_type: string;
   transaction_status: string;
@@ -1221,6 +1222,7 @@ export const donationsApi = {
       const donations = (payload?.donations ?? []).map((item) => ({
         ...item,
         amount: Number(item.amount ?? 0),
+        points: Number(item.points ?? 0),
       }));
 
       return {

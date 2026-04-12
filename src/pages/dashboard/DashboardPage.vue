@@ -9,6 +9,9 @@
 
     <!-- Dashboard Content -->
     <div class="p-8 space-y-8">
+      <!-- Verification Warning -->
+      <VerificationWarningBanner />
+
       <!-- Quick Stats Bento Grid -->
       <div class="dashboard-stats-grid">
         <StatsCard v-for="stat in statsCards" :key="stat.label" :data="stat" />
@@ -58,6 +61,7 @@ import StatsCard from "@/components/dashboard/StatsCard.vue";
 import EarningsChart from "@/components/dashboard/EarningsChart.vue";
 import MilestoneCard from "@/components/dashboard/MilestoneCard.vue";
 import RecentActivity from "@/components/dashboard/RecentActivity.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import { useDashboardStore } from "@/stores/dashboard";
 import type { StatCardData } from "@/types";
 

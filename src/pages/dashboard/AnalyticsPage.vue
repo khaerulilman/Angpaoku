@@ -7,7 +7,7 @@
 
     <div class="p-8 mx-auto">
       <!-- Header -->
-      <div class="mb-12">
+      <div class="mb-6">
         <h1
           class="text-4xl font-headline font-extrabold text-on-surface tracking-tight mb-2"
         >
@@ -18,6 +18,9 @@
           revenue trends.
         </p>
       </div>
+
+      <!-- Verification Warning -->
+      <VerificationWarningBanner class="mb-8" />
 
       <!-- Top Stats Row -->
       <div class="analytics-stats-grid mb-8">
@@ -139,6 +142,7 @@
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import EarningsChart from "@/components/dashboard/EarningsChart.vue";
+import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 
 const topStats = [
   {
