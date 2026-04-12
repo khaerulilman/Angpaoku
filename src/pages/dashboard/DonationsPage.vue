@@ -20,47 +20,98 @@
       <VerificationWarningBanner class="mb-4" />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3 mt-6">
-        <AppCard class="p-6 h-full" shadow="angpao">
-          <p
-            class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
-          >
-            Total Donation Amount
-          </p>
-          <h3 class="text-2xl font-bold text-primary">
-            {{ formatIDR(summary.total_amount) }}
-          </h3>
-          <p class="text-xs text-on-surface-variant mt-2 font-medium">
-            Successful donations only
-          </p>
-        </AppCard>
+        <div v-if="isLoading">
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <div class="space-y-3">
+              <div
+                class="h-3 w-32 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-7 w-40 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-3 w-44 rounded bg-surface-container-high animate-pulse"
+              ></div>
+            </div>
+          </AppCard>
+        </div>
+        <div v-else>
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <p
+              class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
+            >
+              Total Donation Amount
+            </p>
+            <h3 class="text-2xl font-bold text-primary">
+              {{ formatIDR(summary.total_amount) }}
+            </h3>
+            <p class="text-xs text-on-surface-variant mt-2 font-medium">
+              Successful donations only
+            </p>
+          </AppCard>
+        </div>
 
-        <AppCard class="p-6 h-full" shadow="angpao">
-          <p
-            class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
-          >
-            Total Donations
-          </p>
-          <h3 class="text-2xl font-bold text-on-surface">
-            {{ formatNumber(summary.total_donations) }}
-          </h3>
-          <p class="text-xs text-on-surface-variant mt-2 font-medium">
-            Number of paid donations
-          </p>
-        </AppCard>
+        <div v-if="isLoading">
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <div class="space-y-3">
+              <div
+                class="h-3 w-32 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-7 w-40 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-3 w-44 rounded bg-surface-container-high animate-pulse"
+              ></div>
+            </div>
+          </AppCard>
+        </div>
+        <div v-else>
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <p
+              class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
+            >
+              Total Donations
+            </p>
+            <h3 class="text-2xl font-bold text-on-surface">
+              {{ formatNumber(summary.total_donations) }}
+            </h3>
+            <p class="text-xs text-on-surface-variant mt-2 font-medium">
+              Number of paid donations
+            </p>
+          </AppCard>
+        </div>
 
-        <AppCard class="p-6 h-full" shadow="angpao">
-          <p
-            class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
-          >
-            Unique Donors
-          </p>
-          <h3 class="text-2xl font-bold text-on-surface">
-            {{ formatNumber(summary.unique_donors) }}
-          </h3>
-          <p class="text-xs text-on-surface-variant mt-2 font-medium">
-            Distinct donor emails
-          </p>
-        </AppCard>
+        <div v-if="isLoading">
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <div class="space-y-3">
+              <div
+                class="h-3 w-32 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-7 w-40 rounded bg-surface-container-high animate-pulse"
+              ></div>
+              <div
+                class="h-3 w-44 rounded bg-surface-container-high animate-pulse"
+              ></div>
+            </div>
+          </AppCard>
+        </div>
+        <div v-else>
+          <AppCard class="p-6 h-full" shadow="angpao">
+            <p
+              class="text-xs font-semibold text-on-surface-variant uppercase tracking-widest mb-1"
+            >
+              Unique Donors
+            </p>
+            <h3 class="text-2xl font-bold text-on-surface">
+              {{ formatNumber(summary.unique_donors) }}
+            </h3>
+            <p class="text-xs text-on-surface-variant mt-2 font-medium">
+              Distinct donor emails
+            </p>
+          </AppCard>
+        </div>
       </div>
 
       <p v-if="errorMessage" class="mt-6 text-sm font-medium text-red-600">
@@ -68,11 +119,91 @@
       </p>
 
       <AppCard shadow="angpao" class="overflow-hidden mt-6">
-        <div
-          v-if="isLoading"
-          class="px-6 py-10 text-sm text-on-surface-variant"
-        >
-          Loading donations...
+        <div v-if="isLoading" class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-low/50">
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest"
+                >
+                  Donor
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest"
+                >
+                  Message
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest"
+                >
+                  Date &amp; Time
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
+                >
+                  Amount
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
+                >
+                  Points
+                </th>
+                <th
+                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <tr
+                v-for="index in 6"
+                :key="`skeleton-${index}`"
+                class="group hover:bg-surface-container-low transition-colors duration-200"
+              >
+                <td class="px-6 py-5">
+                  <div class="space-y-2">
+                    <div
+                      class="h-4 w-32 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                    <div
+                      class="h-3 w-40 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-6 py-5">
+                  <div
+                    class="h-4 w-48 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-5">
+                  <div class="space-y-2">
+                    <div
+                      class="h-4 w-24 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                    <div
+                      class="h-3 w-20 rounded bg-surface-container-high animate-pulse"
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-6 py-5 text-right">
+                  <div
+                    class="h-4 w-24 rounded bg-surface-container-high animate-pulse ml-auto"
+                  ></div>
+                </td>
+                <td class="px-6 py-5 text-right">
+                  <div
+                    class="h-4 w-12 rounded bg-surface-container-high animate-pulse ml-auto"
+                  ></div>
+                </td>
+                <td class="px-6 py-5 text-right">
+                  <div
+                    class="h-6 w-16 rounded-full bg-surface-container-high animate-pulse ml-auto"
+                  ></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         <div
