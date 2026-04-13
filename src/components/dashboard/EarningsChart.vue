@@ -1,21 +1,21 @@
 <template>
   <div class="bg-surface-container-lowest p-8 rounded-2xl shadow-angpao">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-10">
+    <div class="flex justify-between items-center mb-8 gap-4">
       <div>
         <h2 class="text-xl font-bold">Earnings Performance</h2>
-        <p class="text-sm text-on-surface-variant">
+        <p class="text-sm text-on-surface-variant mt-1">
           Your revenue flow over the last 30 days
         </p>
       </div>
-      <div class="flex gap-2 bg-surface-container-low p-1 rounded-lg">
+
+      <div class="flex gap-1 bg-surface-container-low p-1 rounded-xl">
         <button
           v-for="period in periods"
           :key="period.value"
           :class="[
-            'px-4 py-1.5 text-xs font-medium transition-colors',
+            'px-5 py-2 text-sm font-medium rounded-lg transition-all',
             activePeriod === period.value
-              ? 'bg-white rounded-md shadow-sm font-bold'
+              ? 'bg-surface-container-lowest text-on-surface shadow-sm'
               : 'text-on-surface-variant hover:text-on-surface',
           ]"
           @click="switchPeriod(period.value)"
@@ -25,81 +25,55 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="h-64 flex items-center justify-center">
-      <span class="material-symbols-outlined animate-spin text-2xl text-primary"
-        >progress_activity</span
-      >
-    </div>
-
-    <!-- Empty State -->
-    <div
-      v-else-if="chartData.length === 0"
-      class="h-64 flex items-center justify-center"
-    >
-      <p class="text-sm text-on-surface-variant">No earnings data yet</p>
-    </div>
-
-    <!-- SVG Chart -->
-    <div v-else class="h-64 w-full relative">
-      <svg
-        class="w-full h-full overflow-visible"
-        preserveAspectRatio="none"
-        :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
-      >
-        <defs>
-          <linearGradient id="chart-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop
-              offset="0%"
-              style="stop-color: rgba(187, 21, 44, 0.1); stop-opacity: 1"
-            />
-            <stop
-              offset="100%"
-              style="stop-color: rgba(187, 21, 44, 0); stop-opacity: 1"
-            />
-          </linearGradient>
-        </defs>
-        <!-- Fill area -->
-        <path :d="areaPath" fill="url(#chart-gradient)" />
-        <!-- Line -->
-        <path
-          :d="linePath"
-          fill="none"
-          stroke="#b7102a"
-          stroke-linecap="round"
-          stroke-width="3"
-        />
-        <!-- Data points -->
-        <circle
-          v-for="(point, index) in points"
-          :key="index"
-          :cx="point.x"
-          :cy="point.y"
-          r="4"
-          fill="#b7102a"
-          stroke="white"
-          stroke-width="2"
-          class="cursor-pointer"
-        >
-          <title>
-            {{ chartLabels[index] }}: {{ formatCurrency(chartData[index]) }}
-          </title>
-        </circle>
-      </svg>
-
-      <!-- Chart Labels -->
+    <div class="relative h-[300px]">
       <div
-        class="absolute bottom-0 left-0 w-full flex justify-between text-[10px] text-on-surface-variant/60 font-medium px-2 transform translate-y-6"
+        v-if="loading"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-surface-container-lowest/80"
       >
-        <span v-for="(label, i) in displayLabels" :key="i">{{ label }}</span>
+        <span class="material-symbols-outlined animate-spin text-2xl text-primary">
+          progress_activity
+        </span>
+      </div>
+
+      <div
+        v-else-if="errorMessage"
+        class="absolute inset-0 z-10 flex items-center justify-center text-sm text-error"
+      >
+        {{ errorMessage }}
+      </div>
+
+      <canvas ref="chartCanvas"></canvas>
+    </div>
+
+    <div
+      class="chart-legend mt-5 pt-4 border-t border-outline-variant/30 flex flex-wrap gap-6"
+    >
+      <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+        <span class="h-[9px] w-[9px] rounded-full bg-[#C0392B]"></span>
+        Sales
+        <span class="font-bold text-on-surface">{{ formatCurrency(salesTotal) }}</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+        <span class="h-[9px] w-[9px] rounded-full bg-[#27AE60]"></span>
+        Donations
+        <span class="font-bold text-on-surface">{{ formatCurrency(donationsTotal) }}</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-on-surface-variant">
+        <span class="h-[9px] w-[9px] rounded-full bg-[#1A1A1A]"></span>
+        Total
+        <span class="font-bold text-on-surface">{{ formatCurrency(totalAmount) }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import Chart from "chart.js/auto";
+import type { ScriptableContext } from "chart.js";
 import { analyticsApi } from "@/api";
+
+type Period = "week" | "month";
 
 const POLL_INTERVAL_MS = 10_000;
 
@@ -108,102 +82,263 @@ const periods = [
   { label: "Month", value: "month" as const },
 ];
 
-const activePeriod = ref<"week" | "month">("month");
-const chartLabels = ref<string[]>([]);
-const chartData = ref<number[]>([]);
+const activePeriod = ref<Period>("month");
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
 const loading = ref(true);
+const errorMessage = ref("");
+
+const labels = ref<string[]>([]);
+const sales = ref<number[]>([]);
+const donations = ref<number[]>([]);
+const total = ref<number[]>([]);
+
+let chart: Chart | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-const svgWidth = 800;
-const svgHeight = 200;
-const paddingY = 20;
+const salesTotal = computed(() =>
+  sales.value.reduce((sum, value) => sum + value, 0),
+);
+const donationsTotal = computed(() =>
+  donations.value.reduce((sum, value) => sum + value, 0),
+);
+const totalAmount = computed(() =>
+  total.value.reduce((sum, value) => sum + value, 0),
+);
 
-function formatCurrency(amount: number): string {
-  return `Rp${amount.toLocaleString("id-ID")}`;
+function toNumber(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-const maxValue = computed(() => Math.max(...chartData.value, 1));
+function normalizeSeries(source: unknown, length: number): number[] {
+  const arraySource = Array.isArray(source) ? source : [];
+  return Array.from({ length }, (_, index) => toNumber(arraySource[index]));
+}
 
-const points = computed(() => {
-  const data = chartData.value;
-  if (data.length === 0) return [];
+function formatCurrency(value: number): string {
+  return `Rp${Math.round(value).toLocaleString("id-ID")}`;
+}
 
-  const stepX = data.length > 1 ? svgWidth / (data.length - 1) : svgWidth / 2;
-  return data.map((val, i) => ({
-    x: data.length > 1 ? i * stepX : svgWidth / 2,
-    y:
-      svgHeight -
-      paddingY -
-      (val / maxValue.value) * (svgHeight - paddingY * 2),
-  }));
-});
+function formatYAxisTick(value: string | number): string {
+  const amount = toNumber(value);
+  if (amount === 0) return "0";
+  return `Rp${Math.round(amount / 1000)}rb`;
+}
 
-const linePath = computed(() => {
-  if (points.value.length === 0) return "";
-  return points.value
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`)
-    .join(" ");
-});
+function buildGradient(
+  ctx: CanvasRenderingContext2D,
+  color: "sales" | "donations" | "total",
+) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 320);
 
-const areaPath = computed(() => {
-  if (points.value.length === 0) return "";
-  const line = points.value
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`)
-    .join(" ");
-  const lastX = points.value[points.value.length - 1].x;
-  const firstX = points.value[0].x;
-  return `${line} L${lastX},${svgHeight} L${firstX},${svgHeight} Z`;
-});
+  if (color === "sales") {
+    gradient.addColorStop(0, "rgba(192,57,43,0.20)");
+    gradient.addColorStop(1, "rgba(192,57,43,0)");
+    return gradient;
+  }
 
-const displayLabels = computed(() => {
-  const labels = chartLabels.value;
-  if (labels.length <= 7) return labels.map(formatDateLabel);
-  // Show max 5-7 labels evenly spaced
-  const step = Math.ceil(labels.length / 5);
-  return labels
-    .filter((_, i) => i % step === 0 || i === labels.length - 1)
-    .map(formatDateLabel);
-});
+  if (color === "donations") {
+    gradient.addColorStop(0, "rgba(39,174,96,0.16)");
+    gradient.addColorStop(1, "rgba(39,174,96,0)");
+    return gradient;
+  }
 
-function formatDateLabel(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    return d
-      .toLocaleDateString("en-US", { day: "2-digit", month: "short" })
-      .toUpperCase();
-  } catch {
-    return dateStr;
+  gradient.addColorStop(0, "rgba(26,26,26,0.08)");
+  gradient.addColorStop(1, "rgba(26,26,26,0)");
+  return gradient;
+}
+
+function destroyChart() {
+  if (chart) {
+    chart.destroy();
+    chart = null;
   }
 }
 
-async function fetchChart() {
-  loading.value = true;
+function renderChart() {
+  const canvas = chartCanvas.value;
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  destroyChart();
+
+  const salesGradient = buildGradient(ctx, "sales");
+  const donationGradient = buildGradient(ctx, "donations");
+  const totalGradient = buildGradient(ctx, "total");
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels.value,
+      datasets: [
+        {
+          label: "Sales",
+          data: sales.value,
+          borderColor: "#C0392B",
+          backgroundColor: salesGradient,
+          borderWidth: 3,
+          pointBackgroundColor: "#C0392B",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.1,
+        },
+        {
+          label: "Donations",
+          data: donations.value,
+          borderColor: "#27AE60",
+          backgroundColor: donationGradient,
+          borderWidth: 3,
+          pointBackgroundColor: "#27AE60",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.1,
+        },
+        {
+          label: "Total",
+          data: total.value,
+          borderColor: "#1A1A1A",
+          backgroundColor: totalGradient,
+          borderWidth: 3,
+          borderDash: [6, 4],
+          pointBackgroundColor: "#1A1A1A",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      animations: {
+        y: {
+          from: (ctx: ScriptableContext<"line">) =>
+            ctx.chart.scales.y.getPixelForValue(0),
+          duration: 2000,
+          easing: "easeInOutCubic",
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#1a1a1a",
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: (ctx) =>
+              ` ${ctx.dataset.label}: ${formatCurrency(toNumber(ctx.parsed.y))}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: "#8a8a8a",
+            font: { size: 12 },
+          },
+        },
+        y: {
+          position: "right",
+          beginAtZero: true,
+          grid: { color: "#f0eeec" },
+          border: { display: false },
+          ticks: {
+            color: "#8a8a8a",
+            font: { size: 12 },
+            maxTicksLimit: 5,
+            callback: (value) => formatYAxisTick(value),
+          },
+        },
+      },
+    },
+  });
+}
+
+function applyPayload(payload: {
+  labels?: unknown;
+  data?: unknown;
+  sales?: unknown;
+  donations?: unknown;
+  total?: unknown;
+}) {
+  const nextLabels = Array.isArray(payload.labels)
+    ? payload.labels.map((item) => String(item))
+    : [];
+  const baseLength = nextLabels.length;
+
+  const salesSeries = Array.isArray(payload.sales)
+    ? normalizeSeries(payload.sales, baseLength)
+    : [];
+  const donationsSeries = Array.isArray(payload.donations)
+    ? normalizeSeries(payload.donations, baseLength)
+    : [];
+  const dataSeries = normalizeSeries(payload.data, baseLength);
+  const totalSeriesFromApi = Array.isArray(payload.total)
+    ? normalizeSeries(payload.total, baseLength)
+    : [];
+
+  labels.value = nextLabels;
+
+  // Use only available API fields, no fabricated hardcoded values.
+  sales.value = salesSeries.length > 0 ? salesSeries : dataSeries;
+  donations.value =
+    donationsSeries.length > 0
+      ? donationsSeries
+      : Array.from({ length: baseLength }, () => 0);
+  total.value =
+    totalSeriesFromApi.length > 0
+      ? totalSeriesFromApi
+      : sales.value.map((salesValue, index) => salesValue + donations.value[index]);
+}
+
+async function loadChart(showLoader: boolean) {
+  if (showLoader) loading.value = true;
+  errorMessage.value = "";
+
   try {
     const result = await analyticsApi.getEarningsChart(activePeriod.value);
-    chartLabels.value = result.labels ?? [];
-    chartData.value = (result.data ?? []).map(Number);
-  } catch (err) {
-    console.error("Failed to load earnings chart:", err);
-    chartLabels.value = [];
-    chartData.value = [];
+    applyPayload(result);
+    renderChart();
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : "failed to load earnings chart";
+    labels.value = [];
+    sales.value = [];
+    donations.value = [];
+    total.value = [];
+    destroyChart();
   } finally {
-    loading.value = false;
+    if (showLoader) loading.value = false;
   }
 }
 
-async function silentRefreshChart() {
+async function silentRefresh() {
   try {
     const result = await analyticsApi.getEarningsChart(activePeriod.value);
-    chartLabels.value = result.labels ?? [];
-    chartData.value = (result.data ?? []).map(Number);
+    applyPayload(result);
+    renderChart();
   } catch {
-    // silent
+    // silent refresh failure
   }
 }
 
 function startPolling() {
   stopPolling();
-  pollTimer = setInterval(silentRefreshChart, POLL_INTERVAL_MS);
+  pollTimer = setInterval(silentRefresh, POLL_INTERVAL_MS);
 }
 
 function stopPolling() {
@@ -213,19 +348,23 @@ function stopPolling() {
   }
 }
 
-function switchPeriod(period: "week" | "month") {
+function switchPeriod(period: Period) {
+  if (activePeriod.value === period) return;
   activePeriod.value = period;
 }
 
 watch(activePeriod, async () => {
-  await fetchChart();
+  await loadChart(true);
   startPolling();
 });
 
 onMounted(async () => {
-  await fetchChart();
+  await loadChart(true);
   startPolling();
 });
 
-onBeforeUnmount(stopPolling);
+onBeforeUnmount(() => {
+  stopPolling();
+  destroyChart();
+});
 </script>
