@@ -10,6 +10,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const READ_BASE_URL = import.meta.env.VITE_STORE_PRODUCT_BASE_URL;
 const PRODUCT_BUY_URL = import.meta.env.VITE_PRODUCT_BUY_URL;
 const DONATIONS_URL = import.meta.env.VITE_DONATIONS_API_URL;
+const DASHBOARD_ANALYTICS_URL = import.meta.env.VITE_DASHBOARD_ANALYTICS_URL;
 
 function buildProductBuyBaseURL(rawBaseURL?: string): string {
   const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
@@ -39,6 +40,20 @@ function buildDonationsBaseURL(rawBaseURL?: string): string {
 
 const PRODUCT_BUY_BASE_URL = buildProductBuyBaseURL(PRODUCT_BUY_URL);
 const DONATIONS_BASE_URL = buildDonationsBaseURL(DONATIONS_URL);
+
+function buildAnalyticsBaseURL(rawBaseURL?: string): string {
+  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
+  if (normalizedBaseURL === "") {
+    return "/api/v1";
+  }
+  if (normalizedBaseURL.endsWith("/api/v1")) {
+    return normalizedBaseURL;
+  }
+  return `${normalizedBaseURL}/api/v1`;
+}
+
+const ANALYTICS_BASE_URL = buildAnalyticsBaseURL(DASHBOARD_ANALYTICS_URL);
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
@@ -65,6 +80,14 @@ const productBuyApiClient = axios.create({
 
 const donationsApiClient = axios.create({
   baseURL: DONATIONS_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const analyticsApiClient = axios.create({
+  baseURL: ANALYTICS_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -118,6 +141,19 @@ function extractApiErrorMessage(
 
 function unwrapData<T>(payload: ApiEnvelope<T>): T {
   return payload.data;
+}
+
+function formatTimeAgo(isoDate: string): string {
+  const now = Date.now();
+  const then = new Date(isoDate).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 export interface AuthUser {
@@ -797,12 +833,105 @@ function notImplemented(methodName: string): never {
   throw new Error(`${methodName} is not implemented yet`);
 }
 
-// ---- Dashboard ----
+// ---- Dashboard Analytics (BFF) ----
+export interface DashboardSnapshotData {
+  user_id: string;
+  total_revenue: number;
+  product_sales: number;
+  total_transactions: number;
+  total_donations_amount: number;
+  total_donations_count: number;
+  unique_donors: number;
+  updated_at: string;
+}
+
+export interface DashboardActivityItem {
+  id: string;
+  user_id: string;
+  source: "transaction" | "donation";
+  activity_type: string;
+  title: string;
+  subtitle: string;
+  amount: number;
+  amount_display: string;
+  order_id: string;
+  product_name: string;
+  donor_name: string;
+  status: string;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface DashboardOverviewResponse {
+  snapshot: DashboardSnapshotData;
+  recent_activities: DashboardActivityItem[];
+}
+
+export interface EarningsChartResponse {
+  labels: string[];
+  data: number[];
+  period: string;
+}
+
 export const dashboardApi = {
-  getStats: async (): Promise<DashboardStats> =>
-    notImplemented("dashboardApi.getStats"),
-  getRecentActivity: async (): Promise<ActivityItem[]> =>
-    notImplemented("dashboardApi.getRecentActivity"),
+  async getOverview(activityLimit = 10): Promise<DashboardOverviewResponse> {
+    try {
+      const response = await analyticsApiClient.get<
+        ApiEnvelope<DashboardOverviewResponse>
+      >("/dashboard/overview", {
+        params: { activity_limit: activityLimit },
+      });
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load dashboard overview"),
+      );
+    }
+  },
+
+  async getEarningsChart(
+    period: "week" | "month" = "month",
+  ): Promise<EarningsChartResponse> {
+    try {
+      const response = await analyticsApiClient.get<
+        ApiEnvelope<EarningsChartResponse>
+      >("/dashboard/earnings-chart", {
+        params: { period },
+      });
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load earnings chart"),
+      );
+    }
+  },
+
+  getStats: async (): Promise<DashboardStats> => {
+    const overview = await dashboardApi.getOverview();
+    const s = overview.snapshot;
+    return {
+      totalEarnings: s.total_revenue + s.total_donations_amount,
+      pointsBalance: 0,
+      totalSales: s.product_sales,
+      activeViewers: 0,
+      earningsChangePercent: 0,
+    };
+  },
+
+  getRecentActivity: async (): Promise<ActivityItem[]> => {
+    const overview = await dashboardApi.getOverview();
+    return (overview.recent_activities ?? []).map((a) => ({
+      id: a.id,
+      type: a.activity_type as ActivityItem["type"],
+      title: a.title,
+      subtitle: a.subtitle,
+      amount: a.amount_display,
+      amountType:
+        a.source === "donation" ? ("positive" as const) : ("neutral" as const),
+      timeAgo: formatTimeAgo(a.occurred_at),
+      icon: a.activity_type === "donation" ? "favorite" : "shopping_bag",
+    }));
+  },
 };
 
 // ---- Transactions ----
@@ -1295,12 +1424,16 @@ export const overlayApi = {
 
 // ---- Analytics ----
 export const analyticsApi = {
-  getEarningsChart: async (
-    _period?: string,
-  ): Promise<{ labels: string[]; data: number[] }> =>
-    notImplemented("analyticsApi.getEarningsChart"),
-  getSummary: async (): Promise<Record<string, unknown>> =>
-    notImplemented("analyticsApi.getSummary"),
+  async getEarningsChart(
+    period: "week" | "month" = "month",
+  ): Promise<{ labels: string[]; data: number[] }> {
+    const result = await dashboardApi.getEarningsChart(period);
+    return { labels: result.labels, data: result.data.map(Number) };
+  },
+  async getSummary(): Promise<Record<string, unknown>> {
+    const overview = await dashboardApi.getOverview();
+    return overview.snapshot as unknown as Record<string, unknown>;
+  },
 };
 
 // ---- Withdraw ----
