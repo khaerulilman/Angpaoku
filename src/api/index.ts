@@ -824,7 +824,7 @@ export const transactionsApi = {
       const buyBaseURL = (PRODUCT_BUY_URL ?? "").trim().replace(/\/+$/, "");
       const response = await axios.get<
         ApiEnvelope<BuyProductTransactionHistoryData>
-      >(`${buyBaseURL}/transactions/history`, {
+      >(`${buyBaseURL}/api/v1/transactions/history`, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
         params: {
