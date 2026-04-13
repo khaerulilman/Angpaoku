@@ -49,7 +49,7 @@ const apiClient = axios.create({
 
 const readApiClient = axios.create({
   baseURL: READ_BASE_URL,
-  withCredentials: false,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -57,7 +57,7 @@ const readApiClient = axios.create({
 
 const productBuyApiClient = axios.create({
   baseURL: PRODUCT_BUY_BASE_URL,
-  withCredentials: false,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -838,7 +838,6 @@ export const transactionsApi = {
         "/public/transactions",
         {
           params: {
-            user_id: normalizedUserID,
             page,
             limit,
           },
@@ -863,7 +862,6 @@ export const transactionsApi = {
         ApiEnvelope<BuyProductTransactionHistoryData>
       >("/transactions/history", {
         params: {
-          user_id: normalizedUserID,
           page,
           limit,
         },
