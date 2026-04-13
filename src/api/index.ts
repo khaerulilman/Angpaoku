@@ -317,6 +317,7 @@ interface ReadPublicProduct {
   category: string;
   type: "paid" | "free";
   image_url: string;
+  gallery_images: string[];
   visibility: string;
   created_at: string;
   updated_at: string;
@@ -594,7 +595,9 @@ function mapReadProductToProductRecord(
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
     cover_image_url: product.image_url ?? "",
-    gallery_images: [],
+    gallery_images: Array.isArray(product.gallery_images)
+      ? product.gallery_images
+      : [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
     visibility: product.visibility === "public" ? "live" : "draft",
@@ -629,7 +632,9 @@ function mapPublicDetailToProductRecord(
     discount_percentage: Math.round(product.discount ?? 0),
     discount_end_at: null,
     cover_image_url: product.image_url ?? "",
-    gallery_images: [],
+    gallery_images: Array.isArray(product.gallery_images)
+      ? product.gallery_images
+      : [],
     pricing_type: product.type === "free" ? "free" : "paid",
     price: Number(product.price ?? 0),
     visibility: product.visibility === "public" ? "live" : "draft",
@@ -870,6 +875,9 @@ export interface DashboardOverviewResponse {
 export interface EarningsChartResponse {
   labels: string[];
   data: number[];
+  sales?: number[];
+  donations?: number[];
+  total?: number[];
   period: string;
 }
 
@@ -1424,11 +1432,27 @@ export const overlayApi = {
 
 // ---- Analytics ----
 export const analyticsApi = {
-  async getEarningsChart(
-    period: "week" | "month" = "month",
-  ): Promise<{ labels: string[]; data: number[] }> {
+  async getEarningsChart(period: "week" | "month" = "month"): Promise<{
+    labels: string[];
+    data: number[];
+    sales?: number[];
+    donations?: number[];
+    total?: number[];
+  }> {
     const result = await dashboardApi.getEarningsChart(period);
-    return { labels: result.labels, data: result.data.map(Number) };
+    return {
+      labels: result.labels,
+      data: result.data.map(Number),
+      sales: Array.isArray(result.sales)
+        ? result.sales.map((value) => Number(value))
+        : undefined,
+      donations: Array.isArray(result.donations)
+        ? result.donations.map((value) => Number(value))
+        : undefined,
+      total: Array.isArray(result.total)
+        ? result.total.map((value) => Number(value))
+        : undefined,
+    };
   },
   async getSummary(): Promise<Record<string, unknown>> {
     const overview = await dashboardApi.getOverview();

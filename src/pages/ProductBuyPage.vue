@@ -3,16 +3,29 @@
     <main class="mx-auto min-h-screen w-full max-w-md bg-surface pb-36">
       <header
         class="relative aspect-[4/5] w-full overflow-hidden bg-surface-container"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="onTouchEnd"
       >
-        <img
-          v-if="product?.cover_image_url"
-          :alt="product.name"
-          :src="product.cover_image_url"
-          class="h-full w-full object-cover"
-        />
         <div
-          v-else
-          class="flex h-full w-full items-center justify-center text-sm font-semibold text-on-surface-variant"
+          class="flex h-full transition-transform duration-300 ease-in-out will-change-transform"
+          :style="{ transform: `translateX(-${currentSlideIndex * 100}%)` }"
+        >
+          <div
+            v-for="(slide, i) in slides"
+            :key="i"
+            class="relative h-full w-full shrink-0"
+          >
+            <img
+              :alt="product?.name ?? 'Product image'"
+              :src="slide"
+              class="h-full w-full object-cover"
+            />
+          </div>
+        </div>
+
+        <div
+          v-if="slides.length === 0"
+          class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-on-surface-variant"
         >
           No image
         </div>
@@ -23,6 +36,40 @@
         >
           <span class="material-symbols-outlined">arrow_back</span>
         </RouterLink>
+
+        <template v-if="slides.length > 1">
+          <button
+            class="absolute left-3 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50 active:scale-95"
+            type="button"
+            @click="prevSlide"
+          >
+            <span class="material-symbols-outlined text-[20px]"
+              >chevron_left</span
+            >
+          </button>
+          <button
+            class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50 active:scale-95"
+            type="button"
+            @click="nextSlide"
+          >
+            <span class="material-symbols-outlined text-[20px]"
+              >chevron_right</span
+            >
+          </button>
+
+          <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5">
+            <button
+              v-for="(_, i) in slides"
+              :key="i"
+              type="button"
+              class="h-1.5 rounded-full transition-all duration-200"
+              :class="
+                i === currentSlideIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'
+              "
+              @click="currentSlideIndex = i"
+            />
+          </div>
+        </template>
       </header>
 
       <div class="space-y-10 px-6 py-8">
@@ -231,7 +278,8 @@ declare global {
   }
 }
 
-const MIDTRANS_SNAP_SCRIPT_URL = "https://app.sandbox.midtrans.com/snap/snap.js";
+const MIDTRANS_SNAP_SCRIPT_URL =
+  "https://app.sandbox.midtrans.com/snap/snap.js";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -239,6 +287,44 @@ const authStore = useAuthStore();
 const isLoading = ref(false);
 const errorMessage = ref("");
 const product = ref<ProductRecord | null>(null);
+
+const currentSlideIndex = ref(0);
+let touchStartX = 0;
+
+const slides = computed(() => {
+  if (!product.value) return [];
+  const all = [
+    product.value.cover_image_url,
+    ...(product.value.gallery_images ?? []),
+  ];
+  return all.filter((url) => url.trim() !== "");
+});
+
+function nextSlide(): void {
+  if (slides.value.length === 0) return;
+  currentSlideIndex.value = (currentSlideIndex.value + 1) % slides.value.length;
+}
+
+function prevSlide(): void {
+  if (slides.value.length === 0) return;
+  currentSlideIndex.value =
+    (currentSlideIndex.value - 1 + slides.value.length) % slides.value.length;
+}
+
+function onTouchStart(e: TouchEvent): void {
+  touchStartX = e.touches[0]?.clientX ?? 0;
+}
+
+function onTouchEnd(e: TouchEvent): void {
+  const endX = e.changedTouches[0]?.clientX ?? 0;
+  const delta = touchStartX - endX;
+  if (Math.abs(delta) < 40) return;
+  if (delta > 0) {
+    nextSlide();
+  } else {
+    prevSlide();
+  }
+}
 
 const showCheckoutModal = ref(false);
 const isCreatingTransaction = ref(false);
@@ -426,17 +512,26 @@ async function refreshTransactionStatus(orderID: string): Promise<void> {
     const status = statusResult.payment_status;
 
     if (status === "success") {
-      setCheckoutNotice("success", "Pembayaran berhasil. Produk segera diproses.");
+      setCheckoutNotice(
+        "success",
+        "Pembayaran berhasil. Produk segera diproses.",
+      );
       return;
     }
 
     if (status === "pending") {
-      setCheckoutNotice("warning", "Pembayaran masih pending. Silakan lanjutkan pembayaran.");
+      setCheckoutNotice(
+        "warning",
+        "Pembayaran masih pending. Silakan lanjutkan pembayaran.",
+      );
       return;
     }
 
     if (status === "expired") {
-      setCheckoutNotice("error", "Pembayaran sudah kedaluwarsa. Silakan buat transaksi baru.");
+      setCheckoutNotice(
+        "error",
+        "Pembayaran sudah kedaluwarsa. Silakan buat transaksi baru.",
+      );
       return;
     }
 
@@ -577,6 +672,7 @@ async function submitCheckout(): Promise<void> {
 watch(
   () => productId.value,
   () => {
+    currentSlideIndex.value = 0;
     void loadProduct();
   },
   { immediate: true },
