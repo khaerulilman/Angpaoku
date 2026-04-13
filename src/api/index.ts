@@ -65,7 +65,7 @@ const productBuyApiClient = axios.create({
 
 const donationsApiClient = axios.create({
   baseURL: DONATIONS_BASE_URL,
-  withCredentials: false,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -1274,7 +1274,6 @@ export const donationsApi = {
         }>
       >("/donations/history", {
         params: {
-          user_id: normalizedUserID,
           page,
           limit,
         },
