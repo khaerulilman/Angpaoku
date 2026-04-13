@@ -59,6 +59,32 @@
             </div>
 
             <div
+              class="flex items-center justify-between border-b border-outline-variant/10 px-4 py-2"
+            >
+              <label
+                for="email-notif-toggle"
+                class="text-xs text-on-surface-variant"
+              >
+                Email Notifications
+              </label>
+              <button
+                id="email-notif-toggle"
+                type="button"
+                role="switch"
+                :aria-checked="isEmailAllowed"
+                :disabled="isEmailPermissionLoading"
+                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/30"
+                :class="isEmailAllowed ? 'bg-primary' : 'bg-gray-300'"
+                @click="toggleEmailPermission"
+              >
+                <span
+                  class="pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="isEmailAllowed ? 'translate-x-4' : 'translate-x-0.5'"
+                />
+              </button>
+            </div>
+
+            <div
               v-if="isNotificationLoading"
               class="px-4 py-4 text-sm text-on-surface-variant"
             >
@@ -111,7 +137,10 @@
                         Total pembelian: x{{ item.purchase_count }}
                       </p>
                       <p
-                        v-if="item.source === 'donation' && (item.donation_count ?? 0) > 1"
+                        v-if="
+                          item.source === 'donation' &&
+                          (item.donation_count ?? 0) > 1
+                        "
                         class="mt-1 text-[11px] font-semibold text-primary"
                       >
                         Total donasi hari ini: x{{ item.donation_count }}
@@ -134,7 +163,11 @@
                     Donor: {{ item.donor_display_name }}
                   </p>
                   <p
-                    v-if="item.source === 'donation' && item.amount !== null && item.amount !== undefined"
+                    v-if="
+                      item.source === 'donation' &&
+                      item.amount !== null &&
+                      item.amount !== undefined
+                    "
                     class="mt-1 text-xs font-medium text-on-surface"
                   >
                     Amount: {{ formatCurrency(item.amount) }}
@@ -172,6 +205,7 @@
 <script setup lang="ts">
 import {
   donationNotificationsApi,
+  emailPermissionApi,
   notificationsApi,
   type NotificationRecord,
   profileApi,
@@ -210,16 +244,19 @@ const donationNotifications = ref<NotificationRecord[]>([]);
 const unreadTransactionCount = ref(0);
 const unreadDonationCount = ref(0);
 const notificationDropdownRef = ref<HTMLElement | null>(null);
+const isEmailAllowed = ref(false);
+const isEmailPermissionLoading = ref(false);
 
 const currentUserID = computed(() => authStore.user?.id?.trim() ?? "");
 const notifications = computed<NotificationRecord[]>(() => {
-  return [...transactionNotifications.value, ...donationNotifications.value].sort(
-    (left, right) => {
-      const leftTime = new Date(left.created_at).getTime();
-      const rightTime = new Date(right.created_at).getTime();
-      return rightTime - leftTime;
-    },
-  );
+  return [
+    ...transactionNotifications.value,
+    ...donationNotifications.value,
+  ].sort((left, right) => {
+    const leftTime = new Date(left.created_at).getTime();
+    const rightTime = new Date(right.created_at).getTime();
+    return rightTime - leftTime;
+  });
 });
 const unreadCount = computed(() => {
   return unreadTransactionCount.value + unreadDonationCount.value;
@@ -281,9 +318,9 @@ async function refreshNotifications(): Promise<void> {
   }
 
   if (donationResult.status === "fulfilled") {
-    donationNotifications.value = (donationResult.value.notifications ?? []).filter(
-      (item) => item.status.trim().toLowerCase() === "success",
-    );
+    donationNotifications.value = (
+      donationResult.value.notifications ?? []
+    ).filter((item) => item.status.trim().toLowerCase() === "success");
     unreadDonationCount.value = Number(donationResult.value.unread_count ?? 0);
   } else {
     donationNotifications.value = [];
@@ -314,6 +351,33 @@ async function loadProfileData(): Promise<void> {
     profilePhotoUrl.value = profileResponse.profile.profile_photo ?? "";
   } catch (error) {
     console.error("Failed to load profile data:", error);
+  }
+}
+
+async function loadEmailPermission(): Promise<void> {
+  try {
+    isEmailPermissionLoading.value = true;
+    const result = await emailPermissionApi.get();
+    isEmailAllowed.value = result.is_allowed_email;
+  } catch (error) {
+    console.error("Failed to load email permission:", error);
+  } finally {
+    isEmailPermissionLoading.value = false;
+  }
+}
+
+async function toggleEmailPermission(): Promise<void> {
+  if (isEmailPermissionLoading.value) return;
+
+  const newValue = !isEmailAllowed.value;
+  isEmailPermissionLoading.value = true;
+  try {
+    const result = await emailPermissionApi.update(newValue);
+    isEmailAllowed.value = result.is_allowed_email;
+  } catch (error) {
+    console.error("Failed to update email permission:", error);
+  } finally {
+    isEmailPermissionLoading.value = false;
   }
 }
 
@@ -448,6 +512,7 @@ watch(
 onMounted(() => {
   document.addEventListener("click", handleDocumentClick);
   loadProfileData();
+  loadEmailPermission();
 });
 
 onBeforeUnmount(() => {

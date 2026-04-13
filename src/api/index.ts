@@ -1445,6 +1445,42 @@ export const withdrawApi = {
 };
 
 // ---- Notifications ----
+
+export interface EmailPermissionResponse {
+  user_id: string;
+  is_allowed_email: boolean;
+}
+
+export const emailPermissionApi = {
+  async get(): Promise<EmailPermissionResponse> {
+    try {
+      const response = await apiClient.get<
+        ApiEnvelope<EmailPermissionResponse>
+      >("/notifications-email-permission");
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to load email permission"),
+      );
+    }
+  },
+
+  async update(isAllowedEmail: boolean): Promise<EmailPermissionResponse> {
+    try {
+      const response = await apiClient.patch<
+        ApiEnvelope<EmailPermissionResponse>
+      >("/notifications-email-permission", {
+        is_allowed_email: isAllowedEmail,
+      });
+      return unwrapData(response.data);
+    } catch (error) {
+      throw new Error(
+        extractApiErrorMessage(error, "failed to update email permission"),
+      );
+    }
+  },
+};
+
 export const notificationsApi = {
   async getByUser(
     userID: string,
