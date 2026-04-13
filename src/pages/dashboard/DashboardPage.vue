@@ -12,13 +12,31 @@
       <!-- Verification Warning -->
       <VerificationWarningBanner />
 
-      <!-- Loading State -->
-      <div v-if="loading" class="flex items-center justify-center py-16">
-        <span
-          class="material-symbols-outlined animate-spin text-3xl text-primary"
-          >progress_activity</span
-        >
-        <span class="ml-3 text-on-surface-variant">Loading dashboard...</span>
+      <!-- Skeleton Loading State -->
+      <div v-if="loading" class="space-y-8">
+        <!-- Skeleton Stats Cards -->
+        <div class="dashboard-stats-grid">
+          <SkeletonStatsCard v-for="i in 3" :key="i" />
+        </div>
+
+        <!-- Skeleton Main Analytics Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Skeleton Chart Section (2-col wide) -->
+          <div class="lg:col-span-2 space-y-6">
+            <SkeletonEarningsChart />
+
+            <!-- Skeleton Creator Spotlight -->
+            <div class="dashboard-spotlight-grid">
+              <SkeletonMilestoneCard />
+              <SkeletonNewProductCard />
+            </div>
+          </div>
+
+          <!-- Skeleton Recent Activity Sidebar (1-col) -->
+          <div class="space-y-6">
+            <SkeletonRecentActivity />
+          </div>
+        </div>
       </div>
 
       <!-- Error State -->
@@ -96,6 +114,11 @@ import EarningsChart from "@/components/dashboard/EarningsChart.vue";
 import MilestoneCard from "@/components/dashboard/MilestoneCard.vue";
 import RecentActivity from "@/components/dashboard/RecentActivity.vue";
 import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
+import SkeletonStatsCard from "@/components/dashboard/dashboardSkeleton/SkeletonStatsCard.vue";
+import SkeletonEarningsChart from "@/components/dashboard/dashboardSkeleton/SkeletonEarningsChart.vue";
+import SkeletonMilestoneCard from "@/components/dashboard/dashboardSkeleton/SkeletonMilestoneCard.vue";
+import SkeletonNewProductCard from "@/components/dashboard/dashboardSkeleton/SkeletonNewProductCard.vue";
+import SkeletonRecentActivity from "@/components/dashboard/dashboardSkeleton/SkeletonRecentActivity.vue";
 import {
   dashboardApi,
   type DashboardOverviewResponse,
@@ -171,20 +194,22 @@ const statsCards = computed<StatCardData[]>(() => {
 
 const recentActivities = computed<ActivityItem[]>(() => {
   const activities = overview.value?.recent_activities ?? [];
-  return activities.map((a: DashboardActivityItem) => ({
-    id: a.id,
-    type: (a.activity_type === "donation"
-      ? "donation"
-      : "sale") as ActivityItem["type"],
-    title: a.title,
-    subtitle: a.subtitle || a.order_id,
-    amount: a.amount_display || formatCurrency(a.amount),
-    amountType: (a.source === "donation"
-      ? "positive"
-      : "neutral") as ActivityItem["amountType"],
-    timeAgo: formatTimeAgo(a.occurred_at),
-    icon: a.activity_type === "donation" ? "favorite" : "shopping_bag",
-  }));
+  return activities
+    .map((a: DashboardActivityItem) => ({
+      id: a.id,
+      type: (a.activity_type === "donation"
+        ? "donation"
+        : "sale") as ActivityItem["type"],
+      title: a.title,
+      subtitle: a.subtitle || a.order_id,
+      amount: a.amount_display || formatCurrency(a.amount),
+      amountType: (a.source === "donation"
+        ? "positive"
+        : "neutral") as ActivityItem["amountType"],
+      timeAgo: formatTimeAgo(a.occurred_at),
+      icon: a.activity_type === "donation" ? "favorite" : "shopping_bag",
+    }))
+    .slice(0, 10);
 });
 
 async function fetchDashboard() {
