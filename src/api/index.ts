@@ -329,17 +329,6 @@ export interface TransactionHistoryItem {
   updated_at?: string | null;
 }
 
-interface ReadTransactionHistoryData {
-  summary: ReadTransactionSummary;
-  transactions: TransactionHistoryItem[];
-}
-
-interface ReadTransactionsResponse {
-  data: ReadTransactionHistoryData;
-  page?: number;
-  limit?: number;
-}
-
 interface BuyProductTransactionHistoryData {
   summary: ReadTransactionSummary;
   transactions: TransactionHistoryItem[];
@@ -831,36 +820,13 @@ export const transactionsApi = {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
 
-    let firstError: unknown;
-
     try {
-      const response = await readApiClient.get<ReadTransactionsResponse>(
-        "/public/transactions",
-        {
-          params: {
-            page,
-            limit,
-          },
-        },
-      );
-
-      const result = toTransactionHistoryResult(
-        response.data?.data,
-        response.data?.page ?? page,
-        response.data?.limit ?? limit,
-      );
-
-      if (result.total > 0 || result.transactions.length > 0) {
-        return result;
-      }
-    } catch (error) {
-      firstError = error;
-    }
-
-    try {
-      const response = await productBuyApiClient.get<
+      const buyBaseURL = (PRODUCT_BUY_URL ?? "").trim().replace(/\/+$/, "");
+      const response = await axios.get<
         ApiEnvelope<BuyProductTransactionHistoryData>
-      >("/transactions/history", {
+      >(`${buyBaseURL}/transactions/history`, {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
         params: {
           page,
           limit,
@@ -874,14 +840,6 @@ export const transactionsApi = {
         payload?.limit ?? limit,
       );
     } catch (error) {
-      if (firstError) {
-        throw new Error(
-          extractApiErrorMessage(
-            firstError,
-            "failed to load transaction history from read service",
-          ),
-        );
-      }
       throw new Error(
         extractApiErrorMessage(error, "failed to load transaction history"),
       );
