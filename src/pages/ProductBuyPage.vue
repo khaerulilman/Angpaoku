@@ -216,12 +216,34 @@
             v-model="buyerEmail"
             autocomplete="email"
             class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none ring-primary transition focus:border-primary focus:ring-1"
-            placeholder="you@example.com"
+            placeholder="you@gmail.com"
             type="email"
           />
           <p v-if="checkoutError" class="text-sm font-medium text-red-600">
             {{ checkoutError }}
           </p>
+          <!-- points display -->
+          <div v-if="pointsStatus !== 'idle'" class="flex items-center gap-1.5">
+            <span
+              v-if="pointsStatus === 'loading'"
+              class="text-xs text-on-surface-variant"
+              >Mengecek points...</span
+            >
+            <span
+              v-else-if="pointsStatus === 'error'"
+              class="text-xs font-medium text-red-500"
+              >{{ pointsError }}</span
+            >
+            <template v-else-if="pointsStatus === 'loaded'">
+              <span
+                class="material-symbols-outlined filled text-[14px] text-primary"
+                >stars</span
+              >
+              <span class="text-xs font-semibold text-primary"
+                >You have {{ donorPoints ?? 0 }} points</span
+              >
+            </template>
+          </div>
         </div>
 
         <div class="mt-6 space-y-3">
@@ -297,7 +319,12 @@
 </template>
 
 <script setup lang="ts">
-import { buyOrderApi, publicProductsApi, type ProductRecord } from "@/api";
+import {
+  buyOrderApi,
+  donationsApi,
+  publicProductsApi,
+  type ProductRecord,
+} from "@/api";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
@@ -389,6 +416,12 @@ const checkoutNotice = ref("");
 const checkoutNoticeType = ref<NoticeType>("info");
 const currentOrderID = ref("");
 const paymentMethod = ref<"pay" | "pay-with-points">("pay-with-points");
+
+const donorPoints = ref<number | null>(null);
+const pointsStatus = ref<"idle" | "loading" | "loaded" | "error">("idle");
+const pointsError = ref("");
+let pointsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pointsAbort: AbortController | null = null;
 
 const productId = computed(() => String(route.params.productId ?? "").trim());
 const buyerUserID = computed(() => authStore.user?.id?.trim() ?? "");
@@ -490,6 +523,32 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function isGmailEmail(email: string): boolean {
+  return (
+    isValidEmail(email) && email.trim().toLowerCase().endsWith("@gmail.com")
+  );
+}
+
+async function fetchDonorPoints(email: string): Promise<void> {
+  if (pointsAbort) {
+    pointsAbort.abort();
+  }
+  pointsAbort = new AbortController();
+  pointsStatus.value = "loading";
+  pointsError.value = "";
+
+  try {
+    const result = await donationsApi.checkPoints(email, pointsAbort.signal);
+    donorPoints.value = result.total_points;
+    pointsStatus.value = "loaded";
+  } catch {
+    if (pointsAbort?.signal.aborted) return;
+    donorPoints.value = null;
+    pointsStatus.value = "error";
+    pointsError.value = "Gagal mengambil data points";
+  }
+}
+
 function setCheckoutNotice(type: NoticeType, message: string): void {
   checkoutNoticeType.value = type;
   checkoutNotice.value = message;
@@ -545,6 +604,11 @@ function closeCheckoutModal(): void {
 
   showCheckoutModal.value = false;
   checkoutError.value = "";
+  if (pointsAbort) pointsAbort.abort();
+  pointsStatus.value = "idle";
+  pointsError.value = "";
+  donorPoints.value = null;
+  buyerEmail.value = "";
 }
 
 function resolveOrderID(
@@ -724,6 +788,32 @@ async function submitCheckout(): Promise<void> {
     isCreatingTransaction.value = false;
   }
 }
+
+watch(buyerEmail, (newEmail) => {
+  if (pointsDebounceTimer) clearTimeout(pointsDebounceTimer);
+
+  const normalized = newEmail.trim().toLowerCase();
+
+  if (normalized === "") {
+    if (pointsAbort) pointsAbort.abort();
+    pointsStatus.value = "idle";
+    pointsError.value = "";
+    donorPoints.value = null;
+    return;
+  }
+
+  if (!isGmailEmail(normalized)) {
+    if (pointsAbort) pointsAbort.abort();
+    pointsStatus.value = "error";
+    pointsError.value = "Email tidak valid";
+    donorPoints.value = null;
+    return;
+  }
+
+  pointsDebounceTimer = setTimeout(() => {
+    void fetchDonorPoints(normalized);
+  }, 400);
+});
 
 watch(
   () => productId.value,

@@ -1404,6 +1404,24 @@ export const donationsApi = {
       );
     }
   },
+
+  async checkPoints(
+    email: string,
+    signal?: AbortSignal,
+  ): Promise<{ email: string; total_points: number }> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === "") {
+      throw new Error("email is required");
+    }
+
+    const response = await donationsApiClient.get<
+      ApiEnvelope<{ email: string; total_points: number }>
+    >("/points/check", {
+      params: { email: normalizedEmail },
+      signal,
+    });
+    return unwrapData(response.data);
+  },
 };
 // ---- Points / Donations ----
 export const pointsApi = {
