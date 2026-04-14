@@ -20,9 +20,19 @@
           </p>
         </div>
 
-        <AppButton variant="brand" size="lg" icon="add" @click="goToAddProduct"
-          >Add Product</AppButton
-        >
+        <div class="flex gap-3">
+          <AppButton variant="outline" size="lg" @click="goToLiveStore">
+            <span class="material-symbols-outlined text-lg">arrow_outward</span>
+            Live Store
+          </AppButton>
+          <AppButton
+            variant="brand"
+            size="lg"
+            icon="add"
+            @click="goToAddProduct"
+            >Add Product</AppButton
+          >
+        </div>
       </div>
 
       <!-- Verification Warning -->
@@ -497,16 +507,29 @@
                   {{ product.pricing_type }}
                 </td>
                 <td class="px-6 py-4">
-                  <span
-                    :class="[
-                      'rounded-full px-3 py-1 text-xs font-bold uppercase',
-                      product.visibility === 'live'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-600',
-                    ]"
-                  >
-                    {{ product.visibility }}
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <span
+                      :class="[
+                        'rounded-full px-3 py-1 text-xs font-bold uppercase',
+                        product.visibility === 'live'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600',
+                      ]"
+                    >
+                      {{ product.visibility }}
+                    </span>
+                    <button
+                      v-if="product.visibility === 'live'"
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded text-emerald-600 hover:text-emerald-700 transition-colors"
+                      title="Open product in new tab"
+                      @click="openProductInNewTab(product.id)"
+                    >
+                      <span class="material-symbols-outlined text-base"
+                        >arrow_outward</span
+                      >
+                    </button>
+                  </div>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-2">
@@ -546,6 +569,15 @@
           >
             No products found.
           </div>
+        </div>
+
+        <div
+          class="px-6 py-6 border-t border-outline-variant/10 flex items-center justify-between"
+        >
+          <p class="text-xs text-on-surface-variant font-medium">
+            Showing {{ filteredProducts.length }} of
+            {{ products.length }} products
+          </p>
         </div>
       </AppCard>
     </div>
@@ -701,8 +733,20 @@ function goToAddProduct(): void {
   router.push({ name: "add-product" });
 }
 
+function goToLiveStore(): void {
+  if (!authStore.user?.username) {
+    actionError.value = "Username tidak ditemukan.";
+    return;
+  }
+  window.open(`/store-preview/${authStore.user.username}`, "_blank");
+}
+
 function goToEditProduct(product: ProductRecord): void {
   router.push({ name: "edit-product", params: { id: product.id } });
+}
+
+function openProductInNewTab(productId: string): void {
+  window.open(`/product-buy/${productId}`, "_blank");
 }
 
 function getFinalPrice(product: ProductRecord): number {

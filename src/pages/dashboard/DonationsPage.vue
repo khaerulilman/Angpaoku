@@ -148,11 +148,6 @@
                 >
                   Points
                 </th>
-                <th
-                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
-                >
-                  Status
-                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
@@ -189,16 +184,6 @@
                 <td class="px-6 py-5 text-right">
                   <div
                     class="h-4 w-24 rounded bg-surface-container-high animate-pulse ml-auto"
-                  ></div>
-                </td>
-                <td class="px-6 py-5 text-right">
-                  <div
-                    class="h-4 w-12 rounded bg-surface-container-high animate-pulse ml-auto"
-                  ></div>
-                </td>
-                <td class="px-6 py-5 text-right">
-                  <div
-                    class="h-6 w-16 rounded-full bg-surface-container-high animate-pulse ml-auto"
                   ></div>
                 </td>
               </tr>
@@ -242,11 +227,6 @@
                 >
                   Points
                 </th>
-                <th
-                  class="px-6 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-widest text-right"
-                >
-                  Status
-                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
@@ -282,13 +262,6 @@
                 <td class="px-6 py-5 text-right font-bold text-on-surface">
                   {{ formatNumber(donation.points ?? 0) }}
                 </td>
-                <td class="px-6 py-5 text-right">
-                  <AppBadge
-                    :variant="badgeVariant(donation.transaction_status)"
-                  >
-                    {{ normalizeStatusLabel(donation.transaction_status) }}
-                  </AppBadge>
-                </td>
               </tr>
             </tbody>
           </table>
@@ -312,7 +285,6 @@
 import { onMounted, ref } from "vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
-import AppBadge from "@/components/common/AppBadge.vue";
 import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import {
   donationsApi,
@@ -366,34 +338,6 @@ function formatTime(rawDate: string): string {
     second: "2-digit",
     hour12: false,
   }).format(date);
-}
-
-function normalizeStatusLabel(status: string): string {
-  const normalized = status.trim().toLowerCase();
-  if (normalized === "") {
-    return "pending";
-  }
-  return normalized;
-}
-
-function badgeVariant(
-  status: string,
-): "success" | "warning" | "danger" | "info" {
-  const normalized = normalizeStatusLabel(status);
-  if (normalized === "success" || normalized === "settlement") {
-    return "success";
-  }
-  if (
-    normalized === "failed" ||
-    normalized === "deny" ||
-    normalized === "cancel"
-  ) {
-    return "danger";
-  }
-  if (normalized === "expired" || normalized === "expire") {
-    return "warning";
-  }
-  return "info";
 }
 
 async function loadDonations(): Promise<void> {

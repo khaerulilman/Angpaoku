@@ -41,8 +41,8 @@
           href="#"
           class="flex items-center gap-3 text-on-surface/60 px-4 py-2 text-xs hover:text-primary transition-colors"
         >
-          <span class="material-symbols-outlined text-lg">help</span>
-          <span>Help Center</span>
+          <span class="material-symbols-outlined text-lg">mail</span>
+          <span>Contact Us</span>
         </a>
         <button
           type="button"

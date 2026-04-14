@@ -489,36 +489,20 @@
             >
               Cancel
             </button>
-            <div class="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                class="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-on-surface shadow-sm transition-all hover:bg-slate-50"
-                :disabled="isSubmitting"
-                @click="submitProduct('draft')"
-              >
-                {{
-                  isSubmitting
-                    ? "Saving..."
-                    : isEditMode
-                      ? "Update Draft"
-                      : "Save Draft"
-                }}
-              </button>
-              <button
-                type="button"
-                class="rounded-full bg-primary px-10 py-3 text-sm font-extrabold text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
-                :disabled="isSubmitting"
-                @click="submitProduct('live')"
-              >
-                {{
-                  isSubmitting
-                    ? "Publishing..."
-                    : isEditMode
-                      ? "Update & Publish"
-                      : "Publish Product"
-                }}
-              </button>
-            </div>
+            <button
+              type="button"
+              class="rounded-full bg-primary px-10 py-3 text-sm font-extrabold text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+              :disabled="isSubmitting"
+              @click="submitProduct()"
+            >
+              {{
+                isSubmitting
+                  ? "Processing..."
+                  : isEditMode
+                    ? "Update Product"
+                    : "Add Product"
+              }}
+            </button>
           </footer>
 
           <p v-if="errorMessage" class="text-sm font-medium text-red-600">
@@ -1246,7 +1230,7 @@ async function initializeFormPage(): Promise<void> {
   await restoreDraftFromStorage();
 }
 
-async function submitProduct(visibility: ProductVisibility): Promise<void> {
+async function submitProduct(): Promise<void> {
   errorMessage.value = "";
   successMessage.value = "";
 
@@ -1301,7 +1285,7 @@ async function submitProduct(visibility: ProductVisibility): Promise<void> {
         discountEnabled.value && form.discountPercentage > 0
           ? form.discountEndDate
           : undefined,
-      visibility,
+      visibility: form.visibility,
       slug: form.slug.trim() || undefined,
       cover_image_url: existingCoverImageURL.value || undefined,
       gallery_image_urls:
@@ -1319,7 +1303,6 @@ async function submitProduct(visibility: ProductVisibility): Promise<void> {
     successMessage.value = isEditMode.value
       ? `Product berhasil diperbarui: ${product.name}`
       : `Product berhasil dibuat: ${product.name}`;
-    form.visibility = visibility;
     clearDraftStorage();
 
     // Redirect to products page after brief delay to show success message

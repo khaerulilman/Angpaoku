@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-surface text-on-background">
-    <nav class="fixed inset-x-0 top-0 z-50 px-6 py-4">
+    <!-- <nav class="fixed inset-x-0 top-0 z-50 px-6 py-4">
       <div class="mx-auto flex max-w-7xl items-center justify-between">
         <RouterLink
           class="group flex items-center gap-2 rounded-full bg-surface-container-lowest px-4 py-2 text-on-surface shadow-sm transition-all hover:bg-surface-container"
@@ -20,9 +20,9 @@
           Public Store Preview
         </p>
       </div>
-    </nav>
+    </nav> -->
 
-    <main class="mx-auto max-w-7xl px-6 pb-24 pt-24">
+    <main class="mx-auto max-w-7xl px-6 pb-24 pt-10">
       <header
         class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary/10 via-surface-container-low to-tertiary/10"
       >

@@ -17,7 +17,7 @@
       "
     />
     <span
-      v-else
+      v-else-if="computedInitials"
       class="font-bold text-primary bg-primary-fixed w-full h-full flex items-center justify-center"
       :class="initialsSizeClass"
     >
@@ -77,7 +77,7 @@ const computedInitials = computed(() => {
       .toUpperCase()
       .slice(0, 2);
   }
-  return "?";
+  return "";
 });
 
 const handleClick = () => {
