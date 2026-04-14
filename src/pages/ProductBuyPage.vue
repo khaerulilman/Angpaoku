@@ -275,6 +275,48 @@
           </div>
         </div>
 
+        <!-- Google email match status -->
+        <div
+          v-if="paymentMethod === 'pay-with-points' && isGoogleLoggedIn"
+          class="mt-4 space-y-2"
+        >
+          <div v-if="loadingMatchCheck" class="flex items-center gap-1.5">
+            <span class="text-xs text-on-surface-variant"
+              >Memverifikasi email...</span
+            >
+          </div>
+          <div
+            v-else-if="isEmailMatch === true"
+            class="flex items-center gap-1.5"
+          >
+            <span
+              class="material-symbols-outlined filled text-[14px] text-emerald-600"
+              >check_circle</span
+            >
+            <span class="text-xs font-semibold text-emerald-600"
+              >Email terverifikasi via Google</span
+            >
+          </div>
+          <div v-else-if="isEmailMatch === false" class="space-y-2">
+            <div class="flex items-center gap-1.5">
+              <span
+                class="material-symbols-outlined filled text-[14px] text-red-500"
+                >error</span
+              >
+              <span class="text-xs font-medium text-red-500"
+                >Email tidak sesuai dengan akun Google</span
+              >
+            </div>
+            <button
+              type="button"
+              class="text-xs font-semibold text-primary underline"
+              @click="disconnectGoogle"
+            >
+              Disconnect Google Account
+            </button>
+          </div>
+        </div>
+
         <div class="mt-6 flex gap-3">
           <button
             class="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-on-surface transition hover:bg-slate-100"
@@ -284,33 +326,63 @@
             Batal
           </button>
           <button
+            v-if="paymentMethod === 'pay-with-points' && !isGoogleLoggedIn"
+            :disabled="isCreatingTransaction"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+            type="button"
+            @click="signInWithGoogle"
+          >
+            <span class="inline-flex items-center gap-2">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              Sign in with Google
+            </span>
+          </button>
+          <button
+            v-else-if="
+              paymentMethod === 'pay-with-points' &&
+              isGoogleLoggedIn &&
+              isEmailMatch
+            "
             :disabled="isCreatingTransaction"
             class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
             type="button"
             @click="submitCheckout"
           >
-            <template v-if="paymentMethod === 'pay-with-points'">
-              <span class="inline-flex items-center gap-2">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                {{ isCreatingTransaction ? "Memproses..." : "Sign In" }}
-              </span>
-            </template>
-            <template v-else>
-              {{ isCreatingTransaction ? "Memproses..." : "Processed Payment" }}
-            </template>
+            {{ isCreatingTransaction ? "Memproses..." : "Buy Product" }}
+          </button>
+          <button
+            v-else-if="
+              paymentMethod === 'pay-with-points' &&
+              isGoogleLoggedIn &&
+              !isEmailMatch
+            "
+            disabled
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary opacity-60 cursor-not-allowed"
+            type="button"
+          >
+            {{ loadingMatchCheck ? "Memverifikasi..." : "Email Mismatch" }}
+          </button>
+          <button
+            v-else
+            :disabled="isCreatingTransaction"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+            type="button"
+            @click="submitCheckout"
+          >
+            {{ isCreatingTransaction ? "Memproses..." : "Processed Payment" }}
           </button>
         </div>
       </div>
@@ -352,11 +424,32 @@ interface MidtransSnap {
 declare global {
   interface Window {
     snap?: MidtransSnap;
+    google?: {
+      accounts: {
+        id: {
+          disableAutoSelect: () => void;
+        };
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: {
+              access_token: string;
+              error?: string;
+            }) => void;
+          }) => { requestAccessToken: () => void };
+          revoke: (token: string, callback?: () => void) => void;
+        };
+      };
+    };
   }
 }
 
 const MIDTRANS_SNAP_SCRIPT_URL =
   "https://app.sandbox.midtrans.com/snap/snap.js";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+const GOOGLE_GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -422,6 +515,14 @@ const pointsStatus = ref<"idle" | "loading" | "loaded" | "error">("idle");
 const pointsError = ref("");
 let pointsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pointsAbort: AbortController | null = null;
+
+const isGoogleLoggedIn = ref(false);
+const googleEmail = ref("");
+const googleAccessToken = ref("");
+const isEmailMatch = ref<boolean | null>(null);
+const loadingMatchCheck = ref(false);
+let matchCheckAbort: AbortController | null = null;
+let matchCheckDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const productId = computed(() => String(route.params.productId ?? "").trim());
 const buyerUserID = computed(() => authStore.user?.id?.trim() ?? "");
@@ -609,6 +710,7 @@ function closeCheckoutModal(): void {
   pointsError.value = "";
   donorPoints.value = null;
   buyerEmail.value = "";
+  disconnectGoogle();
 }
 
 function resolveOrderID(
@@ -668,6 +770,125 @@ async function refreshTransactionStatus(orderID: string): Promise<void> {
         ? error.message
         : "Tidak bisa mengecek status transaksi.",
     );
+  }
+}
+
+async function ensureGoogleGISLoaded(): Promise<void> {
+  if (window.google?.accounts?.oauth2) return;
+
+  const existing = document.querySelector<HTMLScriptElement>(
+    "script[data-google-gis='true']",
+  );
+  if (existing) existing.remove();
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = GOOGLE_GIS_SCRIPT_URL;
+    script.async = true;
+    script.setAttribute("data-google-gis", "true");
+    script.onload = () => {
+      if (window.google?.accounts?.oauth2) {
+        resolve();
+      } else {
+        reject(new Error("Google Identity Services gagal dimuat."));
+      }
+    };
+    script.onerror = () =>
+      reject(new Error("Gagal memuat Google Identity Services."));
+    document.body.appendChild(script);
+  });
+}
+
+async function signInWithGoogle(): Promise<void> {
+  try {
+    await ensureGoogleGISLoaded();
+    if (!window.google?.accounts?.oauth2) {
+      checkoutError.value = "Google Sign-In tidak tersedia.";
+      return;
+    }
+
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: "email profile",
+      callback: async (tokenResponse) => {
+        if (tokenResponse.error) {
+          checkoutError.value = "Google Sign-In gagal.";
+          return;
+        }
+        try {
+          const res = await fetch(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            {
+              headers: {
+                Authorization: `Bearer ${tokenResponse.access_token}`,
+              },
+            },
+          );
+          const data = (await res.json()) as { email?: string };
+          const email = (data.email ?? "").trim().toLowerCase();
+          if (!email) {
+            checkoutError.value = "Tidak dapat mengambil email dari Google.";
+            return;
+          }
+          googleEmail.value = email;
+          googleAccessToken.value = tokenResponse.access_token;
+          isGoogleLoggedIn.value = true;
+          void checkEmailMatchBackend();
+        } catch {
+          checkoutError.value = "Gagal mengambil info email dari Google.";
+        }
+      },
+    });
+
+    client.requestAccessToken();
+  } catch (error) {
+    checkoutError.value =
+      error instanceof Error ? error.message : "Google Sign-In gagal.";
+  }
+}
+
+function disconnectGoogle(): void {
+  if (googleAccessToken.value && window.google?.accounts?.oauth2) {
+    window.google.accounts.oauth2.revoke(googleAccessToken.value);
+  }
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.disableAutoSelect();
+  }
+  isGoogleLoggedIn.value = false;
+  googleEmail.value = "";
+  googleAccessToken.value = "";
+  isEmailMatch.value = null;
+  loadingMatchCheck.value = false;
+  if (matchCheckAbort) matchCheckAbort.abort();
+}
+
+async function checkEmailMatchBackend(): Promise<void> {
+  const inputEmail = buyerEmail.value.trim().toLowerCase();
+  const gEmail = googleEmail.value.trim().toLowerCase();
+
+  if (!inputEmail || !gEmail) {
+    isEmailMatch.value = null;
+    return;
+  }
+
+  if (matchCheckAbort) matchCheckAbort.abort();
+  matchCheckAbort = new AbortController();
+  loadingMatchCheck.value = true;
+  isEmailMatch.value = null;
+
+  try {
+    const result = await donationsApi.checkEmailMatch(
+      inputEmail,
+      gEmail,
+      matchCheckAbort.signal,
+    );
+    isEmailMatch.value = result.is_match;
+  } catch {
+    if (matchCheckAbort?.signal.aborted) return;
+    isEmailMatch.value = null;
+    checkoutError.value = "Gagal memverifikasi email.";
+  } finally {
+    loadingMatchCheck.value = false;
   }
 }
 
@@ -791,6 +1012,7 @@ async function submitCheckout(): Promise<void> {
 
 watch(buyerEmail, (newEmail) => {
   if (pointsDebounceTimer) clearTimeout(pointsDebounceTimer);
+  if (matchCheckDebounceTimer) clearTimeout(matchCheckDebounceTimer);
 
   const normalized = newEmail.trim().toLowerCase();
 
@@ -799,6 +1021,7 @@ watch(buyerEmail, (newEmail) => {
     pointsStatus.value = "idle";
     pointsError.value = "";
     donorPoints.value = null;
+    isEmailMatch.value = null;
     return;
   }
 
@@ -807,12 +1030,25 @@ watch(buyerEmail, (newEmail) => {
     pointsStatus.value = "error";
     pointsError.value = "Email tidak valid";
     donorPoints.value = null;
+    isEmailMatch.value = null;
     return;
   }
 
   pointsDebounceTimer = setTimeout(() => {
     void fetchDonorPoints(normalized);
   }, 400);
+
+  if (isGoogleLoggedIn.value && googleEmail.value) {
+    matchCheckDebounceTimer = setTimeout(() => {
+      void checkEmailMatchBackend();
+    }, 400);
+  }
+});
+
+watch(paymentMethod, (newMethod) => {
+  if (newMethod !== "pay-with-points") {
+    disconnectGoogle();
+  }
 });
 
 watch(

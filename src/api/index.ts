@@ -1422,6 +1422,24 @@ export const donationsApi = {
     });
     return unwrapData(response.data);
   },
+
+  async checkEmailMatch(
+    inputEmail: string,
+    googleEmail: string,
+    signal?: AbortSignal,
+  ): Promise<{ is_match: boolean }> {
+    const response = await donationsApiClient.post<
+      ApiEnvelope<{ is_match: boolean }>
+    >(
+      "/auth/check-email-match",
+      {
+        input_email: inputEmail.trim().toLowerCase(),
+        google_email: googleEmail.trim().toLowerCase(),
+      },
+      { signal },
+    );
+    return unwrapData(response.data);
+  },
 };
 // ---- Points / Donations ----
 export const pointsApi = {
