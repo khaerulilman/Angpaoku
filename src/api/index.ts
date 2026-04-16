@@ -281,6 +281,7 @@ export interface ProductRecord {
   updated_at: string;
   username?: string;
   sold_count?: number;
+  product_point?: number;
   category?: Category;
 }
 
@@ -402,6 +403,8 @@ export interface PublicProductDetailProduct {
   category: string;
   type: "paid" | "free";
   image_url: string;
+  gallery_images?: string[];
+  product_point?: number;
   visibility: string;
   created_at: string;
   updated_at: string;
@@ -643,6 +646,7 @@ function mapPublicDetailToProductRecord(
     updated_at: product.updated_at,
     username: data.profile?.username ?? "",
     sold_count: 0,
+    product_point: Number(product.product_point ?? 0),
     category: product.category
       ? {
           id: "",

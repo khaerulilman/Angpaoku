@@ -315,6 +315,11 @@
                 <th
                   class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
+                  Point Convert
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
                   Type
                 </th>
                 <th
@@ -368,6 +373,11 @@
                 <td class="px-6 py-4">
                   <div
                     class="h-4 w-24 rounded bg-surface-container-high animate-pulse"
+                  ></div>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    class="h-4 w-12 rounded bg-surface-container-high animate-pulse"
                   ></div>
                 </td>
                 <td class="px-6 py-4">
@@ -428,6 +438,11 @@
                   class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
                 >
                   Final Price
+                </th>
+                <th
+                  class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
+                >
+                  Point Convert
                 </th>
                 <th
                   class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant/60"
@@ -502,6 +517,9 @@
                         : formatIDR(getFinalPrice(product))
                     }}
                   </span>
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold text-primary">
+                  {{ product.product_point || 0 }} pts
                 </td>
                 <td class="px-6 py-4 text-sm uppercase text-on-surface">
                   {{ product.pricing_type }}

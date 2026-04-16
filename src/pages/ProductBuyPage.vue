@@ -127,6 +127,28 @@
           </section>
 
           <section
+            class="rounded-2xl border border-primary/20 bg-primary/5 p-4"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                class="material-symbols-outlined filled text-[20px] text-primary"
+                >stars</span
+              >
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                >
+                  Points to Convert
+                </p>
+                <p class="text-lg font-bold text-primary">
+                  {{ product.product_point || 0 }}
+                  <span class="text-sm font-medium">pts</span>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
             v-if="checkoutNotice"
             :class="[
               'rounded-2xl border p-4 text-sm font-medium',
