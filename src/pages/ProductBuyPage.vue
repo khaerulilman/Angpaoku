@@ -297,6 +297,54 @@
           </div>
         </div>
 
+        <!-- Hybrid payment breakdown -->
+        <div
+          v-if="
+            paymentMethod === 'pay-with-points' &&
+            pointsStatus === 'loaded' &&
+            donorPoints != null &&
+            donorPoints > 0
+          "
+          class="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+          >
+            Payment Breakdown
+          </p>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-on-surface-variant">Product Price</span>
+              <span class="font-semibold text-on-surface">{{
+                formatIDR(hybridBreakdown.originalPrice)
+              }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-on-surface-variant">Your Points</span>
+              <span class="font-semibold text-primary"
+                >{{ donorPoints }} pts</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-on-surface-variant">Points Used</span>
+              <span class="font-semibold text-primary"
+                >{{ hybridBreakdown.pointsUsed }} pts ({{
+                  formatIDR(hybridBreakdown.pointsValueIDR)
+                }})</span
+              >
+            </div>
+            <hr class="border-outline-variant/20" />
+            <div class="flex justify-between">
+              <span class="font-bold text-on-surface"
+                >Remaining (Midtrans)</span
+              >
+              <span class="font-bold text-primary">{{
+                formatIDR(hybridBreakdown.cashToPay)
+              }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Google email match status -->
         <div
           v-if="paymentMethod === 'pay-with-points' && isGoogleLoggedIn"
@@ -421,7 +469,6 @@ import {
 } from "@/api";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
 
 type NoticeType = "success" | "warning" | "error" | "info";
 
@@ -474,7 +521,6 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 const GOOGLE_GIS_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
 const route = useRoute();
-const authStore = useAuthStore();
 
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -547,7 +593,6 @@ let matchCheckAbort: AbortController | null = null;
 let matchCheckDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const productId = computed(() => String(route.params.productId ?? "").trim());
-const buyerUserID = computed(() => authStore.user?.id?.trim() ?? "");
 
 const creatorLabel = computed(() => {
   if (!product.value) {
@@ -616,6 +661,35 @@ const checkoutNoticeClass = computed(() => {
     default:
       return "border-slate-200 bg-slate-50 text-slate-700";
   }
+});
+
+// Conversion: 10000 IDR = 50 points → 1 point = 200 IDR
+const POINT_TO_IDR = 200;
+
+const hybridBreakdown = computed(() => {
+  const originalPrice = product.value ? getFinalPrice(product.value) : 0;
+  const userPoints = donorPoints.value ?? 0;
+
+  if (
+    paymentMethod.value !== "pay-with-points" ||
+    userPoints <= 0 ||
+    originalPrice <= 0
+  ) {
+    return {
+      originalPrice,
+      pointsUsed: 0,
+      pointsValueIDR: 0,
+      cashToPay: originalPrice,
+    };
+  }
+
+  // Maximum points that can be applied: limited by user's balance and product price
+  const maxPointsByPrice = Math.floor(originalPrice / POINT_TO_IDR);
+  const pointsUsed = Math.min(userPoints, maxPointsByPrice);
+  const pointsValueIDR = pointsUsed * POINT_TO_IDR;
+  const cashToPay = Math.max(originalPrice - pointsValueIDR, 0);
+
+  return { originalPrice, pointsUsed, pointsValueIDR, cashToPay };
 });
 
 function formatIDR(value: number): string {
@@ -969,15 +1043,64 @@ async function submitCheckout(): Promise<void> {
   isCreatingTransaction.value = true;
 
   try {
+    const usePoints = paymentMethod.value === "pay-with-points";
+
+    // Re-check points balance right before purchase to prevent double-spend.
+    // Capture expected points BEFORE updating donorPoints, because
+    // hybridBreakdown is a computed that recalculates when donorPoints changes.
+    if (usePoints && isGmailEmail(normalizedEmail)) {
+      const expectedPointsUsed = hybridBreakdown.value.pointsUsed;
+
+      try {
+        const freshPoints = await donationsApi.checkPoints(normalizedEmail);
+
+        // Fail if user has no usable points at all
+        if (freshPoints.total_points <= 0) {
+          donorPoints.value = 0;
+          checkoutError.value =
+            "Kamu tidak memiliki points. Silakan pilih metode pembayaran lain.";
+          isCreatingTransaction.value = false;
+          return;
+        }
+
+        // Fail if fresh balance can't cover the points the UI promised to use
+        if (
+          expectedPointsUsed > 0 &&
+          freshPoints.total_points < expectedPointsUsed
+        ) {
+          donorPoints.value = freshPoints.total_points;
+          checkoutError.value = `Point tidak cukup. Dibutuhkan ${expectedPointsUsed} points, kamu hanya punya ${freshPoints.total_points} points.`;
+          isCreatingTransaction.value = false;
+          return;
+        }
+
+        // Update reactive state only after validation passes
+        donorPoints.value = freshPoints.total_points;
+      } catch {
+        checkoutError.value = "Gagal mengecek saldo points. Coba lagi.";
+        isCreatingTransaction.value = false;
+        return;
+      }
+    }
+
     const checkoutResult = await buyOrderApi.createTransaction({
       product_id: product.value.id,
       email: normalizedEmail,
-      gross_amount: getFinalPrice(product.value),
-      product_name: product.value.name,
-      user_id: product.value.user_id,
-      buyer_user_id: buyerUserID.value || undefined,
-      quantity: 1,
+      use_points: usePoints,
     });
+
+    // Full point payment: backend already processed it as success
+    if (checkoutResult.payment_status === "success") {
+      const resolvedOrderID = checkoutResult.transaction.order_id;
+      currentOrderID.value = resolvedOrderID;
+      setCheckoutNotice(
+        "success",
+        "Pembayaran berhasil dengan points. Produk segera diproses.",
+      );
+      showCheckoutModal.value = false;
+      isCreatingTransaction.value = false;
+      return;
+    }
 
     const orderID = checkoutResult.transaction.order_id;
     currentOrderID.value = orderID;

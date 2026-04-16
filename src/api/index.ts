@@ -423,11 +423,7 @@ export interface CreateBuyOrderPayload {
 export interface CreateTransactionPayload {
   product_id: string;
   email: string;
-  user_id?: string;
-  buyer_user_id?: string;
-  product_name?: string;
-  gross_amount?: number;
-  quantity?: number;
+  use_points?: boolean;
 }
 
 export interface CheckoutTransaction {
