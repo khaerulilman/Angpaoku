@@ -12,7 +12,9 @@
           >
             arrow_back
           </button>
-          <h1 class="text-lg font-bold tracking-tight text-on-surface">Angpao Gift</h1>
+          <h1 class="text-lg font-bold tracking-tight text-on-surface">
+            Angpao Gift
+          </h1>
         </div>
         <button
           class="material-symbols-outlined rounded-full p-2 text-primary transition-colors duration-200 hover:bg-black/5 active:scale-95"
@@ -28,12 +30,20 @@
       <section
         class="relative overflow-hidden rounded-3xl bg-surface-container-lowest p-6 shadow-[0px_20px_40px_rgba(187,21,44,0.04)]"
       >
-        <div class="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-primary/5"></div>
+        <div
+          class="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-primary/5"
+        ></div>
 
         <div v-if="isLoadingPage" class="space-y-4">
-          <div class="mx-auto h-24 w-24 animate-pulse rounded-full bg-surface-container"></div>
-          <div class="mx-auto h-5 w-1/2 animate-pulse rounded bg-surface-container"></div>
-          <div class="mx-auto h-4 w-4/5 animate-pulse rounded bg-surface-container"></div>
+          <div
+            class="mx-auto h-24 w-24 animate-pulse rounded-full bg-surface-container"
+          ></div>
+          <div
+            class="mx-auto h-5 w-1/2 animate-pulse rounded bg-surface-container"
+          ></div>
+          <div
+            class="mx-auto h-4 w-4/5 animate-pulse rounded bg-surface-container"
+          ></div>
         </div>
 
         <div
@@ -43,7 +53,10 @@
           {{ pageError }}
         </div>
 
-        <div v-else-if="creator" class="relative z-10 flex flex-col items-center space-y-4 text-center">
+        <div
+          v-else-if="creator"
+          class="relative z-10 flex flex-col items-center space-y-4 text-center"
+        >
           <div class="relative">
             <img
               :alt="`${creator.full_name} Profile`"
@@ -56,7 +69,7 @@
             >
               <span
                 class="material-symbols-outlined block text-sm"
-                style="font-variation-settings: 'FILL' 1"
+                style="font-variation-settings: &quot;FILL&quot; 1"
               >
                 verified
               </span>
@@ -70,25 +83,28 @@
               @{{ creator.username }}
             </p>
             <p class="mt-2 text-sm leading-relaxed text-on-surface-variant">
-              {{ creator.bio || "Support this creator with your best donation." }}
+              {{
+                creator.bio || "Support this creator with your best donation."
+              }}
             </p>
           </div>
 
-          <div class="flex w-full items-center justify-center gap-3 text-xs">
-            <span class="rounded-full bg-primary-fixed px-3 py-1 font-semibold text-primary">
-              {{ formatIDR(summary.total_amount) }} total
-            </span>
-            <span class="rounded-full bg-secondary-fixed px-3 py-1 font-semibold text-secondary">
-              {{ formatNumber(summary.total_donations) }} donations
-            </span>
-          </div>
+          <RouterLink
+            :to="`/store-preview/${creator.username}`"
+            class="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-4 py-2 text-xs font-semibold text-on-surface-variant transition hover:bg-primary/10 hover:text-primary"
+          >
+            <span class="material-symbols-outlined text-sm">storefront</span>
+            Go to @{{ creator.username }} store
+          </RouterLink>
         </div>
       </section>
 
       <section class="space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-bold text-on-surface">Choose Amount</h3>
-          <span class="rounded-md bg-tertiary-fixed px-2 py-1 text-xs font-semibold text-tertiary">
+          <span
+            class="rounded-md bg-tertiary-fixed px-2 py-1 text-xs font-semibold text-tertiary"
+          >
             IDR
           </span>
         </div>
@@ -128,8 +144,12 @@
         </div>
 
         <div class="group relative">
-          <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center">
-            <span class="text-sm font-semibold text-on-surface-variant">Rp</span>
+          <div
+            class="pointer-events-none absolute inset-y-0 left-4 flex items-center"
+          >
+            <span class="text-sm font-semibold text-on-surface-variant"
+              >Rp</span
+            >
           </div>
           <input
             v-model.number="customAmount"
@@ -145,7 +165,9 @@
         <h3 class="text-lg font-bold text-on-surface">Supporter Details</h3>
         <div class="space-y-4">
           <div class="space-y-1.5">
-            <label class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+            <label
+              class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+            >
               Display Name
             </label>
             <input
@@ -157,19 +179,64 @@
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+            <label
+              class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+            >
               Email Address
             </label>
             <input
               v-model.trim="supporterEmail"
               class="w-full rounded-2xl border-none bg-surface-container-highest px-4 py-4 transition-all focus:bg-surface-container-lowest focus:ring-2 focus:ring-secondary/10"
-              placeholder="your@email.com"
+              placeholder="your@gmail.com"
               type="email"
             />
+            <!-- real-time points display -->
+            <div
+              v-if="pointsStatus !== 'idle'"
+              class="flex items-center gap-1.5 px-1 pt-0.5"
+            >
+              <span
+                v-if="pointsStatus === 'loading'"
+                class="text-xs text-on-surface-variant"
+                >Mengecek points...</span
+              >
+              <span
+                v-else-if="pointsStatus === 'error'"
+                class="text-xs font-medium text-red-500"
+                >{{ pointsError }}</span
+              >
+              <template
+                v-else-if="pointsStatus === 'loaded' && donorPoints !== null"
+              >
+                <span
+                  class="material-symbols-outlined text-sm"
+                  :class="
+                    donorPoints > 0 ? 'text-primary' : 'text-on-surface-variant'
+                  "
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >stars</span
+                >
+                <span
+                  :class="
+                    donorPoints > 0
+                      ? 'text-xs font-semibold text-primary'
+                      : 'text-xs text-on-surface-variant'
+                  "
+                >
+                  {{
+                    donorPoints > 0
+                      ? `${donorPoints} points tersedia`
+                      : "Tidak punya points"
+                  }}
+                </span>
+              </template>
+            </div>
           </div>
 
           <div class="space-y-1.5">
-            <label class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+            <label
+              class="ml-1 text-xs font-bold uppercase tracking-wider text-on-surface-variant"
+            >
               Your Message (Optional)
             </label>
             <textarea
@@ -197,9 +264,13 @@
       </section>
 
       <section class="space-y-4 pt-4">
-        <div class="flex items-center justify-center gap-2 text-on-surface-variant/60">
+        <div
+          class="flex items-center justify-center gap-2 text-on-surface-variant/60"
+        >
           <span class="material-symbols-outlined text-sm">lock</span>
-          <span class="text-xs font-medium">Secure SSL Encrypted Transaction</span>
+          <span class="text-xs font-medium"
+            >Secure SSL Encrypted Transaction</span
+          >
         </div>
 
         <button
@@ -208,19 +279,24 @@
           type="button"
           @click="submitDonation"
         >
-          {{ isSubmitting ? "Processing..." : `Send Donation ${formattedAmount}` }}
+          {{
+            isSubmitting ? "Processing..." : `Send Donation ${formattedAmount}`
+          }}
           <span class="material-symbols-outlined">favorite</span>
         </button>
 
         <p class="px-8 text-center text-[10px] text-on-surface-variant/40">
-          By clicking Send Donation, you agree to our Terms of Service and Privacy Policy. All transactions are non-refundable.
+          By clicking Send Donation, you agree to our Terms of Service and
+          Privacy Policy. All transactions are non-refundable.
         </p>
       </section>
     </main>
 
     <div
       class="pointer-events-none fixed inset-0 z-[100] opacity-[0.03]"
-      style="background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png')"
+      style="
+        background-image: url(&quot;https://www.transparenttextures.com/patterns/natural-paper.png&quot;);
+      "
     ></div>
   </div>
 </template>
@@ -233,6 +309,7 @@ import {
 } from "@/api";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 
 type NoticeType = "success" | "warning" | "error" | "info";
 
@@ -260,7 +337,8 @@ declare global {
   }
 }
 
-const MIDTRANS_SNAP_SCRIPT_URL = "https://app.sandbox.midtrans.com/snap/snap.js";
+const MIDTRANS_SNAP_SCRIPT_URL =
+  "https://app.sandbox.midtrans.com/snap/snap.js";
 const fallbackAvatar =
   "https://ui-avatars.com/api/?background=F3E8EA&color=B10D21&bold=true&name=Creator";
 
@@ -288,7 +366,17 @@ const checkoutNotice = ref("");
 const checkoutNoticeType = ref<NoticeType>("info");
 const currentOrderID = ref("");
 
-const routeUsername = computed(() => String(route.params.username ?? "").trim().toLowerCase());
+const donorPoints = ref<number | null>(null);
+const pointsStatus = ref<"idle" | "loading" | "loaded" | "error">("idle");
+const pointsError = ref("");
+let pointsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pointsAbort: AbortController | null = null;
+
+const routeUsername = computed(() =>
+  String(route.params.username ?? "")
+    .trim()
+    .toLowerCase(),
+);
 
 const activeAmount = computed(() => {
   if (customAmount.value && customAmount.value > 0) {
@@ -343,7 +431,10 @@ function formatCompactAmount(value: number): string {
 }
 
 function isPresetSelected(amount: number): boolean {
-  return (!customAmount.value || customAmount.value <= 0) && selectedAmount.value === amount;
+  return (
+    (!customAmount.value || customAmount.value <= 0) &&
+    selectedAmount.value === amount
+  );
 }
 
 function selectPresetAmount(amount: number): void {
@@ -358,6 +449,30 @@ function setCheckoutNotice(type: NoticeType, message: string): void {
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isGmailEmail(email: string): boolean {
+  return (
+    isValidEmail(email) && email.trim().toLowerCase().endsWith("@gmail.com")
+  );
+}
+
+async function fetchDonorPoints(email: string): Promise<void> {
+  if (pointsAbort) pointsAbort.abort();
+  pointsAbort = new AbortController();
+  pointsStatus.value = "loading";
+  pointsError.value = "";
+
+  try {
+    const result = await donationsApi.checkPoints(email, pointsAbort.signal);
+    donorPoints.value = result.total_points;
+    pointsStatus.value = "loaded";
+  } catch {
+    if (pointsAbort?.signal.aborted) return;
+    donorPoints.value = null;
+    pointsStatus.value = "error";
+    pointsError.value = "Gagal mengambil data points";
+  }
 }
 
 async function loadCreatorPage(): Promise<void> {
@@ -393,7 +508,10 @@ async function loadCreatorPage(): Promise<void> {
   }
 }
 
-function resolveOrderID(fallbackOrderID: string, callbackResult?: SnapCallbackResult): string {
+function resolveOrderID(
+  fallbackOrderID: string,
+  callbackResult?: SnapCallbackResult,
+): string {
   const callbackOrderID = callbackResult?.order_id?.trim();
   if (callbackOrderID) {
     return callbackOrderID;
@@ -408,21 +526,31 @@ async function refreshDonationStatus(orderID: string): Promise<void> {
   }
 
   try {
-    const statusResult = await donationsApi.getDonationStatus(normalizedOrderID);
+    const statusResult =
+      await donationsApi.getDonationStatus(normalizedOrderID);
     const status = statusResult.payment_status;
 
     if (status === "success") {
-      setCheckoutNotice("success", "Donation successful. Thank you for your support.");
+      setCheckoutNotice(
+        "success",
+        "Donation successful. Thank you for your support.",
+      );
       return;
     }
 
     if (status === "pending") {
-      setCheckoutNotice("warning", "Payment is still pending. Please complete your payment.");
+      setCheckoutNotice(
+        "warning",
+        "Payment is still pending. Please complete your payment.",
+      );
       return;
     }
 
     if (status === "expired") {
-      setCheckoutNotice("error", "Payment expired. Please create a new donation.");
+      setCheckoutNotice(
+        "error",
+        "Payment expired. Please create a new donation.",
+      );
       return;
     }
 
@@ -518,19 +646,28 @@ async function submitDonation(): Promise<void> {
       onSuccess: (result) => {
         const resolvedOrderID = resolveOrderID(orderID, result);
         currentOrderID.value = resolvedOrderID;
-        setCheckoutNotice("success", "Payment success. Verifying latest status...");
+        setCheckoutNotice(
+          "success",
+          "Payment success. Verifying latest status...",
+        );
         void refreshDonationStatus(resolvedOrderID);
       },
       onPending: (result) => {
         const resolvedOrderID = resolveOrderID(orderID, result);
         currentOrderID.value = resolvedOrderID;
-        setCheckoutNotice("warning", "Payment pending. Continue to complete your payment.");
+        setCheckoutNotice(
+          "warning",
+          "Payment pending. Continue to complete your payment.",
+        );
         void refreshDonationStatus(resolvedOrderID);
       },
       onError: (result) => {
         const resolvedOrderID = resolveOrderID(orderID, result);
         currentOrderID.value = resolvedOrderID;
-        setCheckoutNotice("error", "There was a payment issue. Please try again.");
+        setCheckoutNotice(
+          "error",
+          "There was a payment issue. Please try again.",
+        );
         void refreshDonationStatus(resolvedOrderID);
       },
       onClose: () => {
@@ -580,6 +717,31 @@ async function handleShare(): Promise<void> {
     window.alert("Donation link copied to clipboard.");
   }
 }
+
+watch(supporterEmail, (newEmail) => {
+  if (pointsDebounceTimer) clearTimeout(pointsDebounceTimer);
+
+  const normalized = newEmail.trim().toLowerCase();
+
+  if (normalized === "") {
+    if (pointsAbort) pointsAbort.abort();
+    pointsStatus.value = "idle";
+    pointsError.value = "";
+    donorPoints.value = null;
+    return;
+  }
+
+  if (!isGmailEmail(normalized)) {
+    if (pointsAbort) pointsAbort.abort();
+    pointsStatus.value = "idle";
+    donorPoints.value = null;
+    return;
+  }
+
+  pointsDebounceTimer = setTimeout(() => {
+    void fetchDonorPoints(normalized);
+  }, 400);
+});
 
 watch(
   () => routeUsername.value,
