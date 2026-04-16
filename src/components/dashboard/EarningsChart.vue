@@ -4,7 +4,8 @@
       <div>
         <h2 class="text-xl font-bold">Earnings Performance</h2>
         <p class="text-sm text-on-surface-variant mt-1">
-          Your revenue flow over the last 30 days
+          Your revenue flow over the last
+          {{ activePeriod === "week" ? "7" : "30" }} days
         </p>
       </div>
 
@@ -30,7 +31,9 @@
         v-if="loading"
         class="absolute inset-0 z-10 flex items-center justify-center bg-surface-container-lowest/80"
       >
-        <span class="material-symbols-outlined animate-spin text-2xl text-primary">
+        <span
+          class="material-symbols-outlined animate-spin text-2xl text-primary"
+        >
           progress_activity
         </span>
       </div>
@@ -51,17 +54,23 @@
       <div class="flex items-center gap-2 text-xs text-on-surface-variant">
         <span class="h-[9px] w-[9px] rounded-full bg-[#C0392B]"></span>
         Sales
-        <span class="font-bold text-on-surface">{{ formatCurrency(salesTotal) }}</span>
+        <span class="font-bold text-on-surface">{{
+          formatCurrency(salesTotal)
+        }}</span>
       </div>
       <div class="flex items-center gap-2 text-xs text-on-surface-variant">
         <span class="h-[9px] w-[9px] rounded-full bg-[#27AE60]"></span>
         Donations
-        <span class="font-bold text-on-surface">{{ formatCurrency(donationsTotal) }}</span>
+        <span class="font-bold text-on-surface">{{
+          formatCurrency(donationsTotal)
+        }}</span>
       </div>
       <div class="flex items-center gap-2 text-xs text-on-surface-variant">
         <span class="h-[9px] w-[9px] rounded-full bg-[#1A1A1A]"></span>
         Total
-        <span class="font-bold text-on-surface">{{ formatCurrency(totalAmount) }}</span>
+        <span class="font-bold text-on-surface">{{
+          formatCurrency(totalAmount)
+        }}</span>
       </div>
     </div>
   </div>
@@ -123,6 +132,18 @@ function formatYAxisTick(value: string | number): string {
   const amount = toNumber(value);
   if (amount === 0) return "0";
   return `Rp${Math.round(amount / 1000)}rb`;
+}
+
+function formatDateLabel(dateStr: string): string {
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const date = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2]),
+  );
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 function buildGradient(
@@ -268,6 +289,18 @@ function renderChart() {
   });
 }
 
+function updateChartData() {
+  if (!chart) {
+    renderChart();
+    return;
+  }
+  chart.data.labels = labels.value;
+  chart.data.datasets[0].data = sales.value;
+  chart.data.datasets[1].data = donations.value;
+  chart.data.datasets[2].data = total.value;
+  chart.update("active");
+}
+
 function applyPayload(payload: {
   labels?: unknown;
   data?: unknown;
@@ -276,7 +309,7 @@ function applyPayload(payload: {
   total?: unknown;
 }) {
   const nextLabels = Array.isArray(payload.labels)
-    ? payload.labels.map((item) => String(item))
+    ? payload.labels.map((item) => formatDateLabel(String(item)))
     : [];
   const baseLength = nextLabels.length;
 
@@ -302,7 +335,9 @@ function applyPayload(payload: {
   total.value =
     totalSeriesFromApi.length > 0
       ? totalSeriesFromApi
-      : sales.value.map((salesValue, index) => salesValue + donations.value[index]);
+      : sales.value.map(
+          (salesValue, index) => salesValue + donations.value[index],
+        );
 }
 
 async function loadChart(showLoader: boolean) {
@@ -330,7 +365,7 @@ async function silentRefresh() {
   try {
     const result = await analyticsApi.getEarningsChart(activePeriod.value);
     applyPayload(result);
-    renderChart();
+    updateChartData();
   } catch {
     // silent refresh failure
   }
