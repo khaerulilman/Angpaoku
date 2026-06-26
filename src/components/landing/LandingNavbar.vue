@@ -19,11 +19,12 @@
           v-for="link in navLinks"
           :key="link.href"
           :href="link.href"
+          @click="activeNav = link.label"
           :class="[
-            'transition-all duration-300',
-            link.active
-              ? 'text-primary font-bold border-b-2 border-primary'
-              : 'text-on-surface/70 hover:text-primary',
+            'pb-1 border-b-2 transition-all duration-300',
+            activeNav === link.label
+              ? 'border-primary text-primary font-bold'
+              : 'border-transparent text-on-surface/70 hover:text-primary hover:border-primary/40',
           ]"
         >
           {{ link.label }}
@@ -36,12 +37,9 @@
           <!-- Profile Section - Clickable to Dashboard -->
           <router-link
             to="/dashboard"
-            class="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
+            class="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 active:scale-95"
           >
-            <AppAvatar
-              :src="avatarSrc"
-              size="sm"
-            />
+            <AppAvatar :src="avatarSrc" size="sm" />
             <div>
               <p class="text-sm font-bold text-on-surface">
                 {{ displayName }}
@@ -50,7 +48,7 @@
           </router-link>
           <button
             @click="handleLogout"
-            class="px-6 py-2 text-primary font-bold hover:opacity-80 transition-all active:scale-95"
+            class="px-6 py-2 rounded-lg text-primary font-bold transition-all duration-200 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 active:scale-95"
           >
             Logout
           </button>
@@ -58,7 +56,7 @@
         <template v-else>
           <router-link
             to="/login"
-            class="hidden md:block px-6 py-2 text-primary font-bold hover:opacity-80 transition-all active:scale-95"
+            class="hidden md:block px-6 py-2 rounded-lg text-primary font-bold transition-all duration-200 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 active:scale-95"
           >
             Login
           </router-link>
@@ -104,11 +102,12 @@ const avatarSrc = computed(() => {
   return `https://ui-avatars.com/api/?name=${displayName.value}`;
 });
 
+const activeNav = ref("Features");
 const navLinks = [
-  { label: "Features", href: "#features", active: true },
-  { label: "Showcase", href: "#showcase", active: false },
-  { label: "Pricing", href: "#pricing", active: false },
-  { label: "Support", href: "#support", active: false },
+  { label: "Features", href: "#features" },
+  { label: "Showcase", href: "#showcase" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Support", href: "#support" },
 ];
 
 async function loadProfileData(): Promise<void> {

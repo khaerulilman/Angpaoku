@@ -37,13 +37,14 @@
     <!-- Bottom Actions (always pinned at bottom) -->
     <div class="mt-auto flex flex-shrink-0 flex-col gap-4 pt-6">
       <div class="space-y-1 border-t border-outline-variant/20 pt-4">
-        <a
-          href="#"
+        <RouterLink
+          to="/contact"
           class="flex items-center gap-3 text-on-surface/60 px-4 py-2 text-xs hover:text-primary transition-colors"
         >
           <span class="material-symbols-outlined text-lg">mail</span>
           <span>Contact Us</span>
-        </a>
+        </RouterLink>
+
         <button
           type="button"
           class="flex items-center gap-3 text-on-surface/60 px-4 py-2 text-xs hover:text-primary transition-colors"

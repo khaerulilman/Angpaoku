@@ -172,10 +172,31 @@
             </label>
             <input
               v-model.trim="supporterName"
-              class="w-full rounded-2xl border-none bg-surface-container-highest px-4 py-4 transition-all focus:bg-surface-container-lowest focus:ring-2 focus:ring-secondary/10"
+              :class="[
+                'w-full rounded-2xl border-none px-4 py-4 transition-all focus:bg-surface-container-lowest focus:ring-2',
+                nameError
+                  ? 'bg-red-50 focus:ring-red-300'
+                  : 'bg-surface-container-highest focus:ring-secondary/10',
+              ]"
+              maxlength="20"
               placeholder="How should we call you?"
               type="text"
             />
+            <div class="flex items-center justify-between px-1 pt-0.5">
+              <span v-if="nameError" class="text-xs font-medium text-red-500">{{
+                nameError
+              }}</span>
+              <span v-else class="invisible text-xs">‌</span>
+              <span
+                :class="
+                  supporterName.length > 20
+                    ? 'text-xs font-semibold text-red-500'
+                    : 'text-xs text-on-surface-variant/50'
+                "
+              >
+                {{ supporterName.length }}/20
+              </span>
+            </div>
           </div>
 
           <div class="space-y-1.5">
@@ -241,10 +262,33 @@
             </label>
             <textarea
               v-model.trim="supporterMessage"
-              class="w-full resize-none rounded-2xl border-none bg-surface-container-highest px-4 py-4 transition-all focus:bg-surface-container-lowest focus:ring-2 focus:ring-secondary/10"
+              :class="[
+                'w-full resize-none rounded-2xl border-none px-4 py-4 transition-all focus:bg-surface-container-lowest focus:ring-2',
+                messageError
+                  ? 'bg-red-50 focus:ring-red-300'
+                  : 'bg-surface-container-highest focus:ring-secondary/10',
+              ]"
+              maxlength="50"
               placeholder="Write a sweet supporting note..."
               rows="3"
             ></textarea>
+            <div class="flex items-center justify-between px-1 pt-0.5">
+              <span
+                v-if="messageError"
+                class="text-xs font-medium text-red-500"
+                >{{ messageError }}</span
+              >
+              <span v-else class="invisible text-xs">‌</span>
+              <span
+                :class="
+                  supporterMessage.length > 50
+                    ? 'text-xs font-semibold text-red-500'
+                    : 'text-xs text-on-surface-variant/50'
+                "
+              >
+                {{ supporterMessage.length }}/50
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -366,6 +410,9 @@ const checkoutNotice = ref("");
 const checkoutNoticeType = ref<NoticeType>("info");
 const currentOrderID = ref("");
 
+const nameError = ref("");
+const messageError = ref("");
+
 const donorPoints = ref<number | null>(null);
 const pointsStatus = ref<"idle" | "loading" | "loaded" | "error">("idle");
 const pointsError = ref("");
@@ -392,8 +439,10 @@ const canSubmit = computed(() => {
   return (
     creator.value !== null &&
     supporterName.value !== "" &&
+    supporterName.value.length <= 20 &&
     supporterEmail.value !== "" &&
-    activeAmount.value > 0
+    activeAmount.value > 0 &&
+    supporterMessage.value.length <= 50
   );
 });
 
@@ -614,6 +663,18 @@ async function submitDonation(): Promise<void> {
     return;
   }
 
+  nameError.value = "";
+  messageError.value = "";
+
+  if (supporterName.value.length > 20) {
+    nameError.value = "Name must not exceed 20 characters.";
+    return;
+  }
+  if (supporterMessage.value.length > 50) {
+    messageError.value = "Message must not exceed 50 characters.";
+    return;
+  }
+
   const normalizedEmail = supporterEmail.value.trim().toLowerCase();
   if (!isValidEmail(normalizedEmail)) {
     setCheckoutNotice("error", "Please enter a valid email address.");
@@ -717,6 +778,14 @@ async function handleShare(): Promise<void> {
     window.alert("Donation link copied to clipboard.");
   }
 }
+
+watch(supporterName, () => {
+  if (nameError.value) nameError.value = "";
+});
+
+watch(supporterMessage, () => {
+  if (messageError.value) messageError.value = "";
+});
 
 watch(supporterEmail, (newEmail) => {
   if (pointsDebounceTimer) clearTimeout(pointsDebounceTimer);

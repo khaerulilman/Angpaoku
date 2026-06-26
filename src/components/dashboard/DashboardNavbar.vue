@@ -15,7 +15,7 @@
       <div class="flex items-center gap-4">
         <div ref="notificationDropdownRef" class="relative">
           <button
-            class="relative w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"
+            class="relative w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             type="button"
             @click="toggleNotifications"
           >
@@ -37,7 +37,7 @@
             >
               <p class="text-sm font-bold text-on-surface">Notifications</p>
               <button
-                class="text-xs text-primary hover:underline"
+                class="text-xs text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary/30 rounded px-2 py-1 transition-all"
                 type="button"
                 @click="refreshNotifications"
               >
@@ -60,7 +60,7 @@
                 role="switch"
                 :aria-checked="isEmailAllowed"
                 :disabled="isEmailPermissionLoading"
-                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/30"
+                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 :class="isEmailAllowed ? 'bg-primary' : 'bg-gray-300'"
                 @click="toggleEmailPermission"
               >
@@ -99,7 +99,7 @@
                 class="border-b border-outline-variant/10 last:border-b-0"
               >
                 <button
-                  class="w-full px-4 py-3 text-left transition-colors hover:bg-surface-container-lowest"
+                  class="w-full px-4 py-3 text-left transition-colors hover:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-surface-container-lowest"
                   type="button"
                   @click="onNotificationClick(item)"
                 >
@@ -175,15 +175,16 @@
         </div>
 
         <!-- User Info -->
-        <div
-          class="flex cursor-pointer items-center gap-3 pl-4 border-l border-outline-variant/30 transition-colors hover:bg-surface-container-lowest rounded-full px-2"
+        <button
+          class="flex cursor-pointer items-center gap-3 pl-4 border-l border-outline-variant/30 transition-colors hover:bg-surface-container-lowest rounded-full px-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-transparent border-0"
           @click="goToProfile"
+          type="button"
         >
           <div class="text-right hidden sm:block">
             <p class="text-sm font-bold leading-tight">{{ displayName }}</p>
           </div>
           <AppAvatar :src="avatarSrc" :name="displayName" clickable />
-        </div>
+        </button>
       </div>
     </div>
   </header>

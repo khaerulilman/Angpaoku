@@ -74,11 +74,10 @@
 
             <!-- Creator Spotlight -->
             <div class="dashboard-spotlight-grid">
-              <MilestoneCard />
-
               <!-- Add New Product -->
               <div
-                class="bg-surface-container-high/40 p-6 rounded-2xl flex flex-col justify-center items-center text-center border border-dashed border-outline-variant"
+                class="bg-surface-container-high/40 p-6 rounded-2xl flex flex-col justify-center items-center text-center border border-dashed border-outline-variant cursor-pointer hover:bg-surface-container-high/60 transition-colors"
+                @click="router.push('/dashboard/add-product')"
               >
                 <div
                   class="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm"
@@ -108,10 +107,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { useRouter } from "vue-router";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import StatsCard from "@/components/dashboard/StatsCard.vue";
 import EarningsChart from "@/components/dashboard/EarningsChart.vue";
-import MilestoneCard from "@/components/dashboard/MilestoneCard.vue";
 import RecentActivity from "@/components/dashboard/RecentActivity.vue";
 import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
 import SkeletonStatsCard from "@/components/dashboard/dashboardSkeleton/SkeletonStatsCard.vue";
@@ -128,6 +127,7 @@ import type { StatCardData, ActivityItem } from "@/types";
 
 const POLL_INTERVAL_MS = 10_000;
 
+const router = useRouter();
 const loading = ref(true);
 const error = ref("");
 const overview = ref<DashboardOverviewResponse | null>(null);

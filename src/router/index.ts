@@ -46,6 +46,12 @@ const router = createRouter({
       meta: { title: "Donations | Angpaoku" },
     },
     {
+      path: "/overlay/donations/:username",
+      name: "donation-overlay",
+      component: () => import("@/pages/DonationOverlayPage.vue"),
+      meta: { title: "Donation Overlay | Angpaoku" },
+    },
+    {
       path: "/get-verified/:userId",
       name: "get-verified",
       component: () => import("@/pages/GetVerifiedPage.vue"),
@@ -95,12 +101,6 @@ const router = createRouter({
           meta: { title: "donations | Angpaoku Dashboard" },
         },
         {
-          path: "obs-settings",
-          name: "obs-settings",
-          component: () => import("@/pages/dashboard/OBSSettingsPage.vue"),
-          meta: { title: "OBS Settings | Angpaoku Dashboard" },
-        },
-        {
           path: "analytics",
           name: "analytics",
           component: () => import("@/pages/dashboard/AnalyticsPage.vue"),
@@ -111,6 +111,12 @@ const router = createRouter({
           name: "withdraw",
           component: () => import("@/pages/dashboard/WithdrawPage.vue"),
           meta: { title: "Withdraw | Angpaoku Dashboard" },
+        },
+        {
+          path: "overlay",
+          name: "overlay",
+          component: () => import("@/pages/dashboard/OverlayPage.vue"),
+          meta: { title: "Donation Overlay | Angpaoku Dashboard" },
         },
         {
           path: "profile",
@@ -133,6 +139,38 @@ const router = createRouter({
       name: "register",
       component: () => import("@/pages/RegisterPage.vue"),
       meta: { title: "Register | Angpaoku", guestOnly: true },
+    },
+
+    // ---- Legal & Support (Public) ----
+    {
+      path: "/terms-of-service",
+      name: "terms-of-service",
+      component: () => import("@/pages/TermsOfServicePage.vue"),
+      meta: { title: "Terms of Service | Angpaoku" },
+    },
+    {
+      path: "/privacy-policy",
+      name: "privacy-policy",
+      component: () => import("@/pages/PrivacyPolicyPage.vue"),
+      meta: { title: "Privacy Policy | Angpaoku" },
+    },
+    {
+      path: "/cookie-policy",
+      name: "cookie-policy",
+      component: () => import("@/pages/CookiePolicyPage.vue"),
+      meta: { title: "Cookie Policy | Angpaoku" },
+    },
+    {
+      path: "/contact",
+      name: "contact",
+      component: () => import("@/pages/ContactUsPage.vue"),
+      meta: { title: "Contact Us | Angpaoku" },
+    },
+    {
+      path: "/guides/obs-connect",
+      name: "obs-connect-guide",
+      component: () => import("@/pages/ObsConnectGuidePage.vue"),
+      meta: { title: "OBS Connect Guide | Angpaoku" },
     },
 
     // ---- 404 ----
@@ -181,4 +219,3 @@ router.afterEach((to) => {
 });
 
 export default router;
-

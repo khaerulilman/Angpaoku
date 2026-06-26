@@ -1,1 +1,0 @@
-buatkan agar layout pada obssettingspage itu responsive ketika di zoom out, bisa diikuti responsivenya seperti page pada transaction page atau product page

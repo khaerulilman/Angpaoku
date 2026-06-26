@@ -246,9 +246,34 @@
         >
           <p class="text-xs text-on-surface-variant font-medium">
             Showing {{ transactions.length }} of
-            {{ formatNumber(summary.total_transactions) }} successful
-            transactions
+            {{ formatNumber(summary.total_transactions) }} transactions (Page
+            {{ currentPage }} of {{ totalPages }})
           </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              :disabled="currentPage === 1 || isLoading"
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="previousPage"
+            >
+              Previous
+            </button>
+            <span class="text-xs font-medium text-on-surface-variant">
+              Page {{ currentPage }} of {{ totalPages }}
+            </span>
+            <button
+              type="button"
+              :disabled="
+                currentPage === totalPages ||
+                isLoading ||
+                transactions.length < itemsPerPage
+              "
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="nextPage"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </AppCard>
     </div>
@@ -256,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
@@ -275,6 +300,12 @@ const summary = ref<TransactionHistorySummary>({
   total_revenue: 0,
   product_sales: 0,
   total_transactions: 0,
+});
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const totalPages = computed(() => {
+  return Math.ceil(summary.value.total_transactions / itemsPerPage);
 });
 
 function formatIDR(value: number): string {
@@ -314,6 +345,20 @@ function formatTime(rawDate: string): string {
   }).format(date);
 }
 
+function nextPage(): void {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    void loadTransactions();
+  }
+}
+
+function previousPage(): void {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    void loadTransactions();
+  }
+}
+
 async function loadTransactions(): Promise<void> {
   isLoading.value = true;
   errorMessage.value = "";
@@ -330,8 +375,8 @@ async function loadTransactions(): Promise<void> {
 
     const result = await transactionsApi.getAll({
       user_id: userID,
-      page: 1,
-      limit: 100,
+      page: currentPage.value,
+      limit: itemsPerPage,
     });
 
     transactions.value = result.transactions;

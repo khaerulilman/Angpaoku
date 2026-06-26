@@ -6,14 +6,26 @@
     />
 
     <div class="pt-4 px-10 pb-20 mx-auto">
-      <div class="space-y-1 mb-4">
-        <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
-          Donations Received
-        </h2>
-        <p class="text-on-surface-variant max-w-md">
-          Track every donation sent to your page and monitor successful
-          payments.
-        </p>
+      <div class="flex justify-between">
+        <div class="space-y-1 mb-4">
+          <h2 class="text-4xl font-extrabold tracking-tight text-on-surface">
+            Donations Received
+          </h2>
+          <p class="text-on-surface-variant max-w-md">
+            Track every donation sent to your page and monitor successful
+            payments.
+          </p>
+        </div>
+        <div>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-xl bg-primary text-white font-semibold disabled:opacity-50"
+            :disabled="!donationPublicUrl"
+            @click="isQrOpen = true"
+          >
+            Get your QR
+          </button>
+        </div>
       </div>
 
       <!-- Verification Warning -->
@@ -272,17 +284,87 @@
         >
           <p class="text-xs text-on-surface-variant font-medium">
             Showing {{ donations.length }} of
-            {{ formatNumber(summary.total_donations) }} successful donations
-            (including pending rows in table)
+            {{ formatNumber(summary.total_donations) }} donations (Page
+            {{ currentPage }} of {{ totalPages }})
           </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              :disabled="currentPage === 1 || isLoading"
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="previousPage"
+            >
+              Previous
+            </button>
+            <span class="text-xs font-medium text-on-surface-variant">
+              Page {{ currentPage }} of {{ totalPages }}
+            </span>
+            <button
+              type="button"
+              :disabled="
+                currentPage === totalPages ||
+                isLoading ||
+                donations.length < itemsPerPage
+              "
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="nextPage"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </AppCard>
+
+      <div
+        v-if="isQrOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        @click.self="isQrOpen = false"
+      >
+        <div class="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-xl">
+          <h3 class="mb-3 text-lg font-bold text-on-surface">
+            Your Donation QR
+          </h3>
+
+          <div class="mb-3 flex justify-center">
+            <QrcodeVue
+              v-if="donationPublicUrl"
+              :value="donationPublicUrl"
+              :size="220"
+              level="M"
+              render-as="svg"
+            />
+          </div>
+
+          <p class="mb-4 break-all text-xs text-on-surface-variant">
+            {{ donationPublicUrl }}
+          </p>
+
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-outline px-3 py-2 text-sm font-medium text-on-surface"
+              @click="isQrOpen = false"
+            >
+              Close
+            </button>
+            <a
+              :href="donationPublicUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"
+            >
+              Open link
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import QrcodeVue from "qrcode.vue";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar.vue";
 import AppCard from "@/components/common/AppCard.vue";
 import VerificationWarningBanner from "@/components/common/VerificationWarningBanner.vue";
@@ -301,6 +383,21 @@ const summary = ref<DonationHistorySummary>({
   total_amount: 0,
   total_donations: 0,
   unique_donors: 0,
+});
+const isQrOpen = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const donationPublicUrl = computed(() => {
+  const username = authStore.user?.username?.trim() ?? "";
+  if (username === "") {
+    return "";
+  }
+  return window.location.origin + `/donations/` + encodeURIComponent(username);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(summary.value.total_donations / itemsPerPage);
 });
 
 function formatIDR(value: number): string {
@@ -340,6 +437,20 @@ function formatTime(rawDate: string): string {
   }).format(date);
 }
 
+function nextPage(): void {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    void loadDonations();
+  }
+}
+
+function previousPage(): void {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    void loadDonations();
+  }
+}
+
 async function loadDonations(): Promise<void> {
   isLoading.value = true;
   errorMessage.value = "";
@@ -356,8 +467,8 @@ async function loadDonations(): Promise<void> {
 
     const result = await donationsApi.getHistory({
       user_id: userID,
-      page: 1,
-      limit: 100,
+      page: currentPage.value,
+      limit: itemsPerPage,
     });
 
     donations.value = result.donations;

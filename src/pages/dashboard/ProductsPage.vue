@@ -463,7 +463,7 @@
             </thead>
             <tbody class="divide-y divide-surface-container-low">
               <tr
-                v-for="product in filteredProducts"
+                v-for="product in paginatedProducts"
                 :key="product.id"
                 class="hover:bg-surface-container-low/30"
               >
@@ -593,9 +593,35 @@
           class="px-6 py-6 border-t border-outline-variant/10 flex items-center justify-between"
         >
           <p class="text-xs text-on-surface-variant font-medium">
-            Showing {{ filteredProducts.length }} of
-            {{ products.length }} products
+            Showing {{ paginatedProducts.length }} of
+            {{ filteredProducts.length }} products (Page {{ currentPage }} of
+            {{ totalPages }})
           </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              :disabled="currentPage === 1 || isLoadingProducts"
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="previousPage"
+            >
+              Previous
+            </button>
+            <span class="text-xs font-medium text-on-surface-variant">
+              Page {{ currentPage }} of {{ totalPages }}
+            </span>
+            <button
+              type="button"
+              :disabled="
+                currentPage === totalPages ||
+                isLoadingProducts ||
+                paginatedProducts.length < itemsPerPage
+              "
+              class="px-3 py-2 text-sm font-medium rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="nextPage"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </AppCard>
     </div>
@@ -694,6 +720,8 @@ const editingCategoryId = ref<string | null>(null);
 const products = ref<ProductRecord[]>([]);
 const categories = ref<Category[]>([]);
 const productToDelete = ref<ProductRecord | null>(null);
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
 const filters = ref({
   search: "",
@@ -726,6 +754,16 @@ const filteredProducts = computed(() => {
   });
 });
 
+const totalPages = computed(() => {
+  return Math.ceil(filteredProducts.value.length / itemsPerPage);
+});
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredProducts.value.slice(start, end);
+});
+
 function formatIDR(value: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -735,6 +773,7 @@ function formatIDR(value: number): string {
 }
 
 function resetFilters(): void {
+  currentPage.value = 1;
   filters.value = {
     search: "",
     category: "All",
@@ -825,6 +864,7 @@ async function loadProducts(): Promise<void> {
   isLoadingProducts.value = true;
   try {
     products.value = await productsApi.getAll();
+    currentPage.value = 1;
   } catch (error) {
     products.value = [];
     actionError.value =
@@ -915,11 +955,24 @@ async function confirmDeleteProduct(): Promise<void> {
     actionMessage.value = `Product "${selected.name}" berhasil dihapus.`;
     showDeleteConfirm.value = false;
     productToDelete.value = null;
+    currentPage.value = 1;
   } catch (error) {
     deleteError.value =
       error instanceof Error ? error.message : "Gagal menghapus product.";
   } finally {
     isDeletingProduct.value = false;
+  }
+}
+
+function nextPage(): void {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+}
+
+function previousPage(): void {
+  if (currentPage.value > 1) {
+    currentPage.value--;
   }
 }
 
