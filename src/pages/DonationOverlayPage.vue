@@ -73,30 +73,21 @@ const debugMode = computed(() => String(route.query.debug ?? "") === "1");
 const visibleAlerts = computed(() => alerts.value.slice(0, ALERT_MAX_VISIBLE));
 
 function buildWebSocketURL(): string {
-  const envURL = String(import.meta.env.VITE_DONATIONS_WS_URL ?? "").trim();
-  const apiURL = String(import.meta.env.VITE_DONATIONS_API_URL ?? "").trim();
+  const apiURL = String(import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-  let baseURL = envURL;
-  if (baseURL === "") {
+  let baseURL = "";
+  if (apiURL.startsWith("http://") || apiURL.startsWith("https://")) {
+    baseURL = apiURL.replace(/^http/, "ws");
+  } else if (apiURL.startsWith("ws://") || apiURL.startsWith("wss://")) {
     baseURL = apiURL;
-  }
-  if (baseURL === "") {
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  } else {
+    // Relative path or default
     baseURL = `${wsProtocol}//${window.location.host}`;
   }
 
   baseURL = baseURL.replace(/\/+$/, "");
   baseURL = baseURL.replace(/\/api\/v1$/i, "");
-
-  if (baseURL.startsWith("https://")) {
-    baseURL = `wss://${baseURL.slice("https://".length)}`;
-  } else if (baseURL.startsWith("http://")) {
-    baseURL = `ws://${baseURL.slice("http://".length)}`;
-  }
-
-  if (!baseURL.startsWith("ws://") && !baseURL.startsWith("wss://")) {
-    baseURL = `ws://${baseURL}`;
-  }
 
   return `${baseURL}/api/v1/overlay/ws/${encodeURIComponent(username.value)}`;
 }

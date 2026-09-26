@@ -732,10 +732,7 @@ async function submitDonation(): Promise<void> {
         void refreshDonationStatus(resolvedOrderID);
       },
       onClose: () => {
-        setCheckoutNotice(
-          "info",
-          "Payment popup closed before completion. You can continue later.",
-        );
+        void refreshDonationStatus(orderID);
       },
     });
   } catch (error) {

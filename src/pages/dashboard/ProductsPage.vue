@@ -472,8 +472,8 @@
                     class="h-14 w-14 overflow-hidden rounded-lg bg-surface-container-high"
                   >
                     <img
-                      v-if="product.cover_image_url"
-                      :src="product.cover_image_url"
+                      v-if="getProductCover(product)"
+                      :src="getProductCover(product)"
                       :alt="`${product.name} cover`"
                       class="h-full w-full object-cover"
                     />
@@ -821,6 +821,16 @@ function getFinalPrice(product: ProductRecord): number {
   return Math.max(discounted, 0);
 }
 
+function getProductCover(product: ProductRecord): string {
+  if (product.cover_image_url && product.cover_image_url.trim() !== "") {
+    return product.cover_image_url;
+  }
+  if (Array.isArray(product.gallery_images) && product.gallery_images.length > 0) {
+    return product.gallery_images[0] || "";
+  }
+  return "";
+}
+
 function startCreateCategory(): void {
   editingCategoryId.value = null;
   categoryForm.value = { name: "", slug: "" };
@@ -894,23 +904,19 @@ async function submitCategory(): Promise<void> {
   isSubmittingCategory.value = true;
   try {
     if (editingCategoryId.value) {
-      const updated = await categoriesApi.update(editingCategoryId.value, {
+      await categoriesApi.update(editingCategoryId.value, {
         name: categoryForm.value.name.trim(),
         slug: categoryForm.value.slug.trim() || undefined,
       });
-      const idx = categories.value.findIndex((c) => c.id === updated.id);
-      if (idx !== -1) {
-        categories.value[idx] = updated;
-      }
       categorySuccess.value = "Category berhasil diupdate.";
     } else {
-      const created = await categoriesApi.create({
+      await categoriesApi.create({
         name: categoryForm.value.name.trim(),
         slug: categoryForm.value.slug.trim() || undefined,
       });
-      categories.value = [created, ...categories.value];
       categorySuccess.value = "Category berhasil dibuat.";
     }
+    await loadCategories();
     showCategoryForm.value = false;
     editingCategoryId.value = null;
     categoryForm.value = { name: "", slug: "" };
@@ -928,7 +934,7 @@ async function deleteCategory(cat: Category): Promise<void> {
   isDeletingCategory.value = cat.id;
   try {
     await categoriesApi.delete(cat.id);
-    categories.value = categories.value.filter((c) => c.id !== cat.id);
+    await loadCategories();
     categorySuccess.value = `Category "${cat.name}" berhasil dihapus.`;
   } catch (error) {
     categoryError.value =

@@ -231,7 +231,7 @@
             class="block text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant"
             for="guest-email"
           >
-            Email
+            Email <span class="text-red-500">*</span>
           </label>
           <input
             id="guest-email"
@@ -240,7 +240,14 @@
             class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none ring-primary transition focus:border-primary focus:ring-1"
             placeholder="you@gmail.com"
             type="email"
+            required
           />
+          <p v-if="!buyerEmail.trim()" class="text-xs text-on-surface-variant">
+            * Email wajib diisi untuk melanjutkan transaksi.
+          </p>
+          <p v-else-if="!isValidBuyerEmail" class="text-xs text-amber-600">
+            Format email belum valid.
+          </p>
           <p v-if="checkoutError" class="text-sm font-medium text-red-600">
             {{ checkoutError }}
           </p>
@@ -397,8 +404,8 @@
           </button>
           <button
             v-if="paymentMethod === 'pay-with-points' && !isGoogleLoggedIn"
-            :disabled="isCreatingTransaction"
-            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+            :disabled="!isValidBuyerEmail || isCreatingTransaction"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             @click="signInWithGoogle"
           >
@@ -424,10 +431,10 @@
             v-else-if="
               paymentMethod === 'pay-with-points' &&
               isGoogleLoggedIn &&
-              isEmailMatch
+              isEmailMatch === true
             "
-            :disabled="isCreatingTransaction"
-            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+            :disabled="!isValidBuyerEmail || isCreatingTransaction"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             @click="submitCheckout"
           >
@@ -437,18 +444,18 @@
             v-else-if="
               paymentMethod === 'pay-with-points' &&
               isGoogleLoggedIn &&
-              !isEmailMatch
+              isEmailMatch !== true
             "
             disabled
-            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary opacity-60 cursor-not-allowed"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary opacity-50 cursor-not-allowed"
             type="button"
           >
             {{ loadingMatchCheck ? "Memverifikasi..." : "Email Mismatch" }}
           </button>
           <button
             v-else
-            :disabled="isCreatingTransaction"
-            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+            :disabled="!isValidBuyerEmail || isCreatingTransaction"
+            class="btn-gradient flex-1 rounded-xl px-4 py-3 text-sm font-bold text-on-primary transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             @click="submitCheckout"
           >
@@ -535,7 +542,7 @@ const slides = computed(() => {
     product.value.cover_image_url,
     ...(product.value.gallery_images ?? []),
   ];
-  return all.filter((url) => url.trim() !== "");
+  return all.filter((url) => typeof url === "string" && url.trim() !== "");
 });
 
 const storePreviewPath = computed(() => {
@@ -572,6 +579,7 @@ function onTouchEnd(e: TouchEvent): void {
 const showCheckoutModal = ref(false);
 const isCreatingTransaction = ref(false);
 const buyerEmail = ref("");
+const isValidBuyerEmail = computed(() => isValidEmail(buyerEmail.value.trim()));
 const checkoutError = ref("");
 const checkoutNotice = ref("");
 const checkoutNoticeType = ref<NoticeType>("info");
@@ -592,7 +600,9 @@ const loadingMatchCheck = ref(false);
 let matchCheckAbort: AbortController | null = null;
 let matchCheckDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const productId = computed(() => String(route.params.productId ?? "").trim());
+const productId = computed(() =>
+  String(route.params.productId ?? route.params.id ?? "").trim(),
+);
 
 const creatorLabel = computed(() => {
   if (!product.value) {
@@ -896,6 +906,12 @@ async function ensureGoogleGISLoaded(): Promise<void> {
 }
 
 async function signInWithGoogle(): Promise<void> {
+  const inputEmail = buyerEmail.value.trim().toLowerCase();
+  if (!isValidEmail(inputEmail)) {
+    checkoutError.value = "Masukkan email yang valid terlebih dahulu.";
+    return;
+  }
+
   try {
     await ensureGoogleGISLoaded();
     if (!window.google?.accounts?.oauth2) {
@@ -967,10 +983,13 @@ async function checkEmailMatchBackend(): Promise<void> {
     return;
   }
 
+  const isMatch = inputEmail === gEmail;
+  isEmailMatch.value = isMatch;
+  checkoutError.value = "";
+
   if (matchCheckAbort) matchCheckAbort.abort();
   matchCheckAbort = new AbortController();
   loadingMatchCheck.value = true;
-  isEmailMatch.value = null;
 
   try {
     const result = await donationsApi.checkEmailMatch(
@@ -981,8 +1000,7 @@ async function checkEmailMatchBackend(): Promise<void> {
     isEmailMatch.value = result.is_match;
   } catch {
     if (matchCheckAbort?.signal.aborted) return;
-    isEmailMatch.value = null;
-    checkoutError.value = "Gagal memverifikasi email.";
+    isEmailMatch.value = isMatch;
   } finally {
     loadingMatchCheck.value = false;
   }
@@ -1048,7 +1066,7 @@ async function submitCheckout(): Promise<void> {
     // Re-check points balance right before purchase to prevent double-spend.
     // Capture expected points BEFORE updating donorPoints, because
     // hybridBreakdown is a computed that recalculates when donorPoints changes.
-    if (usePoints && isGmailEmail(normalizedEmail)) {
+    if (usePoints && isValidEmail(normalizedEmail)) {
       const expectedPointsUsed = hybridBreakdown.value.pointsUsed;
 
       try {
@@ -1142,10 +1160,7 @@ async function submitCheckout(): Promise<void> {
         void refreshTransactionStatus(resolvedOrderID);
       },
       onClose: () => {
-        setCheckoutNotice(
-          "info",
-          "Pembayaran ditutup sebelum selesai. Kamu bisa lanjutkan transaksi kapan saja.",
-        );
+        void refreshTransactionStatus(orderID);
       },
     });
   } catch (error) {
@@ -1170,10 +1185,9 @@ watch(buyerEmail, (newEmail) => {
     return;
   }
 
-  if (!isGmailEmail(normalized)) {
+  if (!isValidEmail(normalized)) {
     if (pointsAbort) pointsAbort.abort();
-    pointsStatus.value = "error";
-    pointsError.value = "Email tidak valid";
+    pointsStatus.value = "idle";
     donorPoints.value = null;
     isEmailMatch.value = null;
     return;

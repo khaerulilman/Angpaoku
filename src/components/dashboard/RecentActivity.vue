@@ -15,6 +15,20 @@
     <!-- Scrollable Activity List -->
     <div class="space-y-6 flex-1 overflow-y-auto pr-2">
       <div
+        v-if="!activities || activities.length === 0"
+        class="flex flex-col items-center justify-center py-10 text-center text-on-surface-variant"
+      >
+        <span class="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">
+          history
+        </span>
+        <p class="text-sm font-semibold text-on-surface">Belum ada aktivitas</p>
+        <p class="text-xs text-on-surface-variant/70 mt-1 max-w-[200px]">
+          Transaksi atau donasi baru yang masuk akan tampil di sini secara otomatis.
+        </p>
+      </div>
+
+      <div
+        v-else
         v-for="item in activities"
         :key="item.id"
         class="flex items-center gap-4 group"

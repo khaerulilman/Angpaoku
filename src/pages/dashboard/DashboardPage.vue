@@ -195,20 +195,21 @@ const statsCards = computed<StatCardData[]>(() => {
 const recentActivities = computed<ActivityItem[]>(() => {
   const activities = overview.value?.recent_activities ?? [];
   return activities
-    .map((a: DashboardActivityItem) => ({
-      id: a.id,
-      type: (a.activity_type === "donation"
-        ? "donation"
-        : "sale") as ActivityItem["type"],
-      title: a.title,
-      subtitle: a.subtitle || a.order_id,
-      amount: a.amount_display || formatCurrency(a.amount),
-      amountType: (a.source === "donation"
-        ? "positive"
-        : "neutral") as ActivityItem["amountType"],
-      timeAgo: formatTimeAgo(a.occurred_at),
-      icon: a.activity_type === "donation" ? "favorite" : "shopping_bag",
-    }))
+    .map((a: DashboardActivityItem) => {
+      const isDonation =
+        a.activity_type?.toLowerCase().includes("donation") ||
+        a.source === "donation";
+      return {
+        id: a.id,
+        type: (isDonation ? "donation" : "sale") as ActivityItem["type"],
+        title: a.title,
+        subtitle: a.subtitle || a.order_id,
+        amount: a.amount_display || formatCurrency(a.amount),
+        amountType: (isDonation ? "positive" : "neutral") as ActivityItem["amountType"],
+        timeAgo: formatTimeAgo(a.occurred_at || a.created_at),
+        icon: isDonation ? "favorite" : "shopping_bag",
+      };
+    })
     .slice(0, 10);
 });
 

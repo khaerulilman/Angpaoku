@@ -303,9 +303,9 @@
           >
             <div class="relative h-56 overflow-hidden bg-surface-container">
               <img
-                v-if="product.cover_image_url"
+                v-if="getProductCover(product)"
                 :alt="product.name"
-                :src="product.cover_image_url"
+                :src="getProductCover(product)"
                 class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div
@@ -318,7 +318,7 @@
               <div
                 class="absolute left-3 top-3 rounded-full bg-surface-container-lowest/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary"
               >
-                {{ product.category?.name ?? "Uncategorized" }}
+                {{ getCategoryName(product) || "Uncategorized" }}
               </div>
             </div>
 
@@ -390,11 +390,29 @@ const profileDisplayName = computed(() => {
   return name === "" ? "Creator Store" : name;
 });
 
+function getCategoryName(product: ProductRecord): string {
+  if (!product.category) return "";
+  const cat = product.category as unknown;
+  if (typeof cat === "string") return cat.trim();
+  if (typeof cat === "object" && cat !== null) {
+    const rawName = (cat as Record<string, unknown>).name;
+    if (typeof rawName === "string") return rawName.trim();
+    if (
+      typeof rawName === "object" &&
+      rawName !== null &&
+      typeof (rawName as Record<string, unknown>).name === "string"
+    ) {
+      return ((rawName as Record<string, unknown>).name as string).trim();
+    }
+  }
+  return "";
+}
+
 const filters = computed(() => {
   const unique = new Set<string>();
 
   for (const product of products.value) {
-    const categoryName = product.category?.name?.trim();
+    const categoryName = getCategoryName(product);
     if (categoryName) {
       unique.add(categoryName);
     }
@@ -409,7 +427,7 @@ const filteredProducts = computed(() => {
   }
 
   return products.value.filter(
-    (product) => (product.category?.name ?? "") === selectedFilter.value,
+    (product) => getCategoryName(product) === selectedFilter.value,
   );
 });
 
@@ -433,6 +451,16 @@ function formatIDR(value: number): string {
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function getProductCover(product: ProductRecord): string {
+  if (product.cover_image_url && product.cover_image_url.trim() !== "") {
+    return product.cover_image_url;
+  }
+  if (Array.isArray(product.gallery_images) && product.gallery_images.length > 0) {
+    return product.gallery_images[0] || "";
+  }
+  return "";
 }
 
 function getFinalPrice(product: ProductRecord): number {

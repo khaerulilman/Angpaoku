@@ -6,53 +6,7 @@ import type {
   OverlaySettings,
 } from "@/types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const READ_BASE_URL = import.meta.env.VITE_STORE_PRODUCT_BASE_URL;
-const PRODUCT_BUY_URL = import.meta.env.VITE_PRODUCT_BUY_URL;
-const DONATIONS_URL = import.meta.env.VITE_DONATIONS_API_URL;
-const DASHBOARD_ANALYTICS_URL = import.meta.env.VITE_DASHBOARD_ANALYTICS_URL;
-
-function buildProductBuyBaseURL(rawBaseURL?: string): string {
-  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
-  if (normalizedBaseURL === "") {
-    return "/api/v1";
-  }
-
-  if (normalizedBaseURL.endsWith("/api/v1")) {
-    return normalizedBaseURL;
-  }
-
-  return `${normalizedBaseURL}/api/v1`;
-}
-
-function buildDonationsBaseURL(rawBaseURL?: string): string {
-  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
-  if (normalizedBaseURL === "") {
-    return "/api/v1";
-  }
-
-  if (normalizedBaseURL.endsWith("/api/v1")) {
-    return normalizedBaseURL;
-  }
-
-  return `${normalizedBaseURL}/api/v1`;
-}
-
-const PRODUCT_BUY_BASE_URL = buildProductBuyBaseURL(PRODUCT_BUY_URL);
-const DONATIONS_BASE_URL = buildDonationsBaseURL(DONATIONS_URL);
-
-function buildAnalyticsBaseURL(rawBaseURL?: string): string {
-  const normalizedBaseURL = (rawBaseURL ?? "").trim().replace(/\/+$/, "");
-  if (normalizedBaseURL === "") {
-    return "/api/v1";
-  }
-  if (normalizedBaseURL.endsWith("/api/v1")) {
-    return normalizedBaseURL;
-  }
-  return `${normalizedBaseURL}/api/v1`;
-}
-
-const ANALYTICS_BASE_URL = buildAnalyticsBaseURL(DASHBOARD_ANALYTICS_URL);
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -62,37 +16,11 @@ const apiClient = axios.create({
   },
 });
 
-const readApiClient = axios.create({
-  baseURL: READ_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-const productBuyApiClient = axios.create({
-  baseURL: PRODUCT_BUY_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-const donationsApiClient = axios.create({
-  baseURL: DONATIONS_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-const analyticsApiClient = axios.create({
-  baseURL: ANALYTICS_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+// Backward-compatible unified aliases pointing to the single monolith apiClient
+const readApiClient = apiClient;
+const productBuyApiClient = apiClient;
+const donationsApiClient = apiClient;
+const analyticsApiClient = apiClient;
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -580,79 +508,132 @@ export interface DonationNotificationRecord extends NotificationRecord {
   source?: "donation";
 }
 
+function normalizeCategory(
+  rawCategory: unknown,
+  userId = "",
+  createdAt = "",
+  updatedAt = "",
+): Category | undefined {
+  if (!rawCategory) return undefined;
+  if (typeof rawCategory === "string") {
+    const trimmed = rawCategory.trim();
+    if (!trimmed) return undefined;
+    return {
+      id: "",
+      user_id: userId,
+      name: trimmed,
+      slug: "",
+      created_at: createdAt,
+      updated_at: updatedAt,
+    };
+  }
+  if (typeof rawCategory === "object" && rawCategory !== null) {
+    const cat = rawCategory as Record<string, unknown>;
+    const rawName = cat.name;
+    let nameStr = "";
+    if (typeof rawName === "string") {
+      nameStr = rawName.trim();
+    } else if (
+      typeof rawName === "object" &&
+      rawName !== null &&
+      typeof (rawName as Record<string, unknown>).name === "string"
+    ) {
+      nameStr = ((rawName as Record<string, unknown>).name as string).trim();
+    }
+    if (!nameStr) return undefined;
+    return {
+      id: typeof cat.id === "string" ? cat.id : "",
+      user_id: typeof cat.user_id === "string" ? cat.user_id : userId,
+      name: nameStr,
+      slug: typeof cat.slug === "string" ? cat.slug : "",
+      created_at: typeof cat.created_at === "string" ? cat.created_at : createdAt,
+      updated_at: typeof cat.updated_at === "string" ? cat.updated_at : updatedAt,
+    };
+  }
+  return undefined;
+}
+
 function mapReadProductToProductRecord(
-  product: ReadPublicProduct,
+  product: any,
 ): ProductRecord {
   return {
     id: product.id,
     user_id: product.user_id,
-    category_id: null,
+    category_id: product.category_id ?? null,
     name: product.name,
-    description: product.description,
-    product_link: "",
-    link_verified: false,
-    discount_percentage: Math.round(product.discount ?? 0),
-    discount_end_at: null,
-    cover_image_url: product.image_url ?? "",
+    description: product.description ?? "",
+    product_link: product.product_link ?? "",
+    link_verified: Boolean(product.link_verified),
+    discount_percentage: Math.round(product.discount_percentage ?? product.discount ?? 0),
+    discount_end_at: product.discount_end_at ?? null,
+    cover_image_url: product.cover_image_url ?? product.image_url ?? "",
     gallery_images: Array.isArray(product.gallery_images)
       ? product.gallery_images
       : [],
-    pricing_type: product.type === "free" ? "free" : "paid",
+    pricing_type: product.pricing_type ?? (product.type === "free" ? "free" : "paid"),
     price: Number(product.price ?? 0),
-    visibility: product.visibility === "public" ? "live" : "draft",
-    slug: "",
-    created_at: product.created_at,
-    updated_at: product.updated_at,
-    category: product.category
-      ? {
-          id: "",
-          user_id: product.user_id,
-          name: product.category,
-          slug: "",
-          created_at: product.created_at,
-          updated_at: product.updated_at,
-        }
-      : undefined,
+    visibility:
+      product.visibility === "live" || product.visibility === "public"
+        ? "live"
+        : "draft",
+    slug: product.slug ?? "",
+    created_at: product.created_at ?? "",
+    updated_at: product.updated_at ?? "",
+    category: normalizeCategory(
+      product.category,
+      product.user_id,
+      product.created_at,
+      product.updated_at,
+    ),
   };
 }
 
 function mapPublicDetailToProductRecord(
   data: PublicProductDetailData,
 ): ProductRecord {
-  const product = data.product;
+  const product: any = data.product;
+  const imageURL =
+    product.cover_image_url && product.cover_image_url.trim() !== ""
+      ? product.cover_image_url
+      : product.image_url && product.image_url.trim() !== ""
+        ? product.image_url
+        : Array.isArray(product.gallery_images) &&
+            product.gallery_images.length > 0
+          ? product.gallery_images[0] || ""
+          : "";
+
   return {
     id: product.id,
     user_id: product.user_id,
-    category_id: null,
+    category_id: product.category_id ?? null,
     name: product.name,
-    description: product.description,
-    product_link: "",
-    link_verified: false,
-    discount_percentage: Math.round(product.discount ?? 0),
-    discount_end_at: null,
-    cover_image_url: product.image_url ?? "",
+    description: product.description ?? "",
+    product_link: product.product_link ?? "",
+    link_verified: Boolean(product.link_verified),
+    discount_percentage: Math.round(product.discount_percentage ?? product.discount ?? 0),
+    discount_end_at: product.discount_end_at ?? null,
+    cover_image_url: imageURL,
     gallery_images: Array.isArray(product.gallery_images)
       ? product.gallery_images
       : [],
-    pricing_type: product.type === "free" ? "free" : "paid",
+    pricing_type: product.pricing_type ?? (product.type === "free" ? "free" : "paid"),
     price: Number(product.price ?? 0),
-    visibility: product.visibility === "public" ? "live" : "draft",
-    slug: "",
-    created_at: product.created_at,
-    updated_at: product.updated_at,
+    visibility:
+      product.visibility === "live" || product.visibility === "public"
+        ? "live"
+        : "draft",
+    slug: product.slug ?? "",
+    created_at: product.created_at ?? "",
+    updated_at: product.updated_at ?? "",
     username: data.profile?.username ?? "",
     sold_count: 0,
     product_point: Number(product.product_point ?? 0),
-    category: product.category
-      ? {
-          id: "",
-          user_id: product.user_id,
-          name: product.category,
-          slug: "",
-          created_at: product.created_at,
-          updated_at: product.updated_at,
-        }
-      : undefined,
+    category: normalizeCategory(
+      product.category,
+      product.user_id,
+      product.created_at,
+      product.updated_at,
+    ),
   };
 }
 
@@ -958,12 +939,9 @@ export const transactionsApi = {
     const limit = params.limit ?? 20;
 
     try {
-      const buyBaseURL = (PRODUCT_BUY_URL ?? "").trim().replace(/\/+$/, "");
-      const response = await axios.get<
+      const response = await apiClient.get<
         ApiEnvelope<BuyProductTransactionHistoryData>
-      >(`${buyBaseURL}/api/v1/transactions/history`, {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
+      >("/transactions/creator/history", {
         params: {
           page,
           limit,
@@ -1026,11 +1004,15 @@ function toTransactionHistoryResult(
 export const categoriesApi = {
   async getAll(): Promise<Category[]> {
     try {
-      const response =
-        await apiClient.get<ApiEnvelope<{ categories: Category[] }>>(
-          "/categories",
-        );
-      return unwrapData(response.data).categories ?? [];
+      const response = await apiClient.get<ApiEnvelope<any>>("/categories");
+      const data = unwrapData(response.data);
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data && Array.isArray(data.categories)) {
+        return data.categories;
+      }
+      return [];
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to load categories"),
@@ -1040,10 +1022,15 @@ export const categoriesApi = {
 
   async create(payload: CreateCategoryPayload): Promise<Category> {
     try {
-      const response = await apiClient.post<
-        ApiEnvelope<{ category: Category }>
-      >("/categories", payload);
-      return unwrapData(response.data).category;
+      const response = await apiClient.post<ApiEnvelope<any>>(
+        "/categories",
+        payload,
+      );
+      const data = unwrapData(response.data);
+      if (data && data.category) {
+        return data.category;
+      }
+      return data as Category;
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to create category"),
@@ -1053,11 +1040,15 @@ export const categoriesApi = {
 
   async update(id: string, payload: UpdateCategoryPayload): Promise<Category> {
     try {
-      const response = await apiClient.put<ApiEnvelope<{ category: Category }>>(
+      const response = await apiClient.put<ApiEnvelope<any>>(
         `/categories/${encodeURIComponent(id)}`,
         payload,
       );
-      return unwrapData(response.data).category;
+      const data = unwrapData(response.data);
+      if (data && data.category) {
+        return data.category;
+      }
+      return data as Category;
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to update category"),
@@ -1162,11 +1153,11 @@ export const storePreviewApi = {
     }
 
     try {
-      const response = await readApiClient.get<
-        ReadEnvelope<ReadStorePreviewData>
-      >(`/public/store/${encodeURIComponent(normalizedUsername)}`);
+      const response = await apiClient.get<ApiEnvelope<any>>(
+        `/public/store/${encodeURIComponent(normalizedUsername)}`,
+      );
+      const payload = unwrapData(response.data);
 
-      const payload = response.data?.data;
       return {
         username: normalizedUsername,
         profile: {
@@ -1202,13 +1193,20 @@ export const publicProductsApi = {
     }
 
     try {
-      const response = await readApiClient.get<
-        ReadEnvelope<PublicProductDetailData>
-      >(`/public/product/${encodeURIComponent(normalizedProductID)}`);
+      const response = await apiClient.get<ApiEnvelope<any>>(
+        `/public/product/${encodeURIComponent(normalizedProductID)}`,
+      );
+      let payload = unwrapData(response.data);
 
-      const payload = response.data?.data;
-      if (!payload?.product) {
+      if (!payload?.product && !payload?.id) {
         throw new Error("product not found");
+      }
+
+      if (payload.id && !payload.product) {
+        payload = {
+          product: payload,
+          profile: { username: payload.username || "" },
+        };
       }
 
       return mapPublicDetailToProductRecord(payload);
@@ -1225,7 +1223,7 @@ export const buyOrderApi = {
     payload: CreateTransactionPayload,
   ): Promise<TransactionCheckoutResult> {
     try {
-      const response = await productBuyApiClient.post<
+      const response = await apiClient.post<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -1258,7 +1256,7 @@ export const buyOrderApi = {
     }
 
     try {
-      const response = await productBuyApiClient.get<
+      const response = await apiClient.get<
         ApiEnvelope<{
           transaction: CheckoutTransaction;
           payment_status: string;
@@ -1283,14 +1281,18 @@ export const donationsApi = {
     }
 
     try {
-      const response = await donationsApiClient.get<
+      const response = await apiClient.get<
         ApiEnvelope<{
           creator: PublicDonationCreator;
           summary: PublicDonationSummary;
         }>
-      >(`/donations/${encodeURIComponent(normalizedUsername)}`);
+      >(`/public/donations/${encodeURIComponent(normalizedUsername)}`);
 
       const payload = unwrapData(response.data);
+      if (!payload?.creator) {
+        throw new Error("creator not found");
+      }
+
       return {
         creator: payload.creator,
         summary: {
@@ -1310,7 +1312,7 @@ export const donationsApi = {
     payload: CreateDonationPayload,
   ): Promise<DonationCheckoutResult> {
     try {
-      const response = await donationsApiClient.post<
+      const response = await apiClient.post<
         ApiEnvelope<{
           donation: DonationCheckoutTransaction;
           payment_status: string;
@@ -1332,12 +1334,12 @@ export const donationsApi = {
     }
 
     try {
-      const response = await donationsApiClient.get<
+      const response = await apiClient.get<
         ApiEnvelope<{
           donation: DonationCheckoutTransaction;
           payment_status: string;
         }>
-      >(`/donations/orders/${encodeURIComponent(normalizedOrderID)}`);
+      >(`/donations/${encodeURIComponent(normalizedOrderID)}`);
       return unwrapData(response.data);
     } catch (error) {
       throw new Error(
@@ -1360,7 +1362,7 @@ export const donationsApi = {
     const limit = params.limit ?? 20;
 
     try {
-      const response = await donationsApiClient.get<
+      const response = await apiClient.get<
         ApiEnvelope<{
           summary: DonationHistorySummary;
           donations: DonationHistoryItem[];
@@ -1408,19 +1410,25 @@ export const donationsApi = {
   async checkPoints(
     email: string,
     signal?: AbortSignal,
-  ): Promise<{ email: string; total_points: number }> {
+  ): Promise<{ email: string; total_points: number; points: number }> {
     const normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail === "") {
       throw new Error("email is required");
     }
 
-    const response = await donationsApiClient.get<
-      ApiEnvelope<{ email: string; total_points: number }>
+    const response = await apiClient.get<
+      ApiEnvelope<{ email?: string; total_points?: number; points?: number }>
     >("/points/check", {
       params: { email: normalizedEmail },
       signal,
     });
-    return unwrapData(response.data);
+    const payload = unwrapData(response.data);
+    const pointsValue = Number(payload?.total_points ?? payload?.points ?? 0);
+    return {
+      email: payload?.email ?? normalizedEmail,
+      total_points: pointsValue,
+      points: pointsValue,
+    };
   },
 
   async checkEmailMatch(
@@ -1428,7 +1436,7 @@ export const donationsApi = {
     googleEmail: string,
     signal?: AbortSignal,
   ): Promise<{ is_match: boolean }> {
-    const response = await donationsApiClient.post<
+    const response = await apiClient.post<
       ApiEnvelope<{ is_match: boolean }>
     >(
       "/auth/check-email-match",
@@ -1516,7 +1524,7 @@ export const emailPermissionApi = {
     try {
       const response = await apiClient.get<
         ApiEnvelope<EmailPermissionResponse>
-      >("/notifications-email-permission");
+      >("/notifications/permissions");
       return unwrapData(response.data);
     } catch (error) {
       throw new Error(
@@ -1527,9 +1535,9 @@ export const emailPermissionApi = {
 
   async update(isAllowedEmail: boolean): Promise<EmailPermissionResponse> {
     try {
-      const response = await apiClient.patch<
+      const response = await apiClient.put<
         ApiEnvelope<EmailPermissionResponse>
-      >("/notifications-email-permission", {
+      >("/notifications/permissions", {
         is_allowed_email: isAllowedEmail,
       });
       return unwrapData(response.data);
@@ -1553,21 +1561,29 @@ export const notificationsApi = {
 
     const limit = params?.limit ?? 20;
     const offset = params?.offset ?? 0;
+    const page = Math.floor(offset / limit) + 1;
 
     try {
-      const response = await productBuyApiClient.get<
-        ApiEnvelope<NotificationListResponse>
+      const response = await apiClient.get<
+        ApiEnvelope<{
+          notifications: NotificationRecord[];
+          unread_count: number;
+          page: number;
+          limit: number;
+        }>
       >("/notifications", {
-        headers: {
-          "X-User-ID": normalizedUserID,
-        },
         params: {
-          user_id: normalizedUserID,
+          page,
           limit,
-          offset,
         },
       });
-      return unwrapData(response.data);
+      const data = unwrapData(response.data);
+      return {
+        notifications: data.notifications ?? [],
+        unread_count: Number(data.unread_count ?? 0),
+        limit: Number(data.limit ?? limit),
+        offset,
+      };
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(error, "failed to load notifications"),
@@ -1576,24 +1592,14 @@ export const notificationsApi = {
   },
 
   async markAsRead(userID: string, notificationID: string): Promise<void> {
-    const normalizedUserID = userID.trim();
     const normalizedNotificationID = notificationID.trim();
-    if (normalizedUserID === "" || normalizedNotificationID === "") {
+    if (normalizedNotificationID === "") {
       throw new Error("invalid notification input");
     }
 
     try {
-      await productBuyApiClient.patch(
+      await apiClient.put(
         `/notifications/${encodeURIComponent(normalizedNotificationID)}/read`,
-        {},
-        {
-          headers: {
-            "X-User-ID": normalizedUserID,
-          },
-          params: {
-            user_id: normalizedUserID,
-          },
-        },
       );
     } catch (error) {
       throw new Error(
@@ -1602,25 +1608,9 @@ export const notificationsApi = {
     }
   },
 
-  async markAllAsRead(userID: string): Promise<void> {
-    const normalizedUserID = userID.trim();
-    if (normalizedUserID === "") {
-      throw new Error("invalid user id");
-    }
-
+  async markAllAsRead(_userID?: string): Promise<void> {
     try {
-      await productBuyApiClient.patch(
-        "/notifications/read",
-        {},
-        {
-          headers: {
-            "X-User-ID": normalizedUserID,
-          },
-          params: {
-            user_id: normalizedUserID,
-          },
-        },
-      );
+      await apiClient.put("/notifications/read-all");
     } catch (error) {
       throw new Error(
         extractApiErrorMessage(
@@ -1644,24 +1634,25 @@ export const donationNotificationsApi = {
 
     const limit = params?.limit ?? 20;
     const offset = params?.offset ?? 0;
+    const page = Math.floor(offset / limit) + 1;
 
     try {
-      const response = await donationsApiClient.get<
-        ApiEnvelope<NotificationListResponse>
+      const response = await apiClient.get<
+        ApiEnvelope<{
+          notifications: NotificationRecord[];
+          unread_count: number;
+          page: number;
+          limit: number;
+        }>
       >("/notifications", {
-        headers: {
-          "X-User-ID": normalizedUserID,
-        },
         params: {
-          user_id: normalizedUserID,
+          page,
           limit,
-          offset,
         },
       });
 
       const payload = unwrapData(response.data);
       return {
-        ...payload,
         notifications: (payload.notifications ?? []).map((item) => ({
           ...item,
           source: "donation" as const,
@@ -1675,6 +1666,9 @@ export const donationNotificationsApi = {
               ? null
               : Number(item.amount),
         })),
+        unread_count: Number(payload.unread_count ?? 0),
+        limit: Number(payload.limit ?? limit),
+        offset,
       };
     } catch (error) {
       throw new Error(
@@ -1684,61 +1678,10 @@ export const donationNotificationsApi = {
   },
 
   async markAsRead(userID: string, notificationID: string): Promise<void> {
-    const normalizedUserID = userID.trim();
-    const normalizedNotificationID = notificationID.trim();
-    if (normalizedUserID === "" || normalizedNotificationID === "") {
-      throw new Error("invalid notification input");
-    }
-
-    try {
-      await donationsApiClient.patch(
-        `/notifications/${encodeURIComponent(normalizedNotificationID)}/read`,
-        {},
-        {
-          headers: {
-            "X-User-ID": normalizedUserID,
-          },
-          params: {
-            user_id: normalizedUserID,
-          },
-        },
-      );
-    } catch (error) {
-      throw new Error(
-        extractApiErrorMessage(
-          error,
-          "failed to mark donation notification as read",
-        ),
-      );
-    }
+    return notificationsApi.markAsRead(userID, notificationID);
   },
 
-  async markAllAsRead(userID: string): Promise<void> {
-    const normalizedUserID = userID.trim();
-    if (normalizedUserID === "") {
-      throw new Error("invalid user id");
-    }
-
-    try {
-      await donationsApiClient.patch(
-        "/notifications/read",
-        {},
-        {
-          headers: {
-            "X-User-ID": normalizedUserID,
-          },
-          params: {
-            user_id: normalizedUserID,
-          },
-        },
-      );
-    } catch (error) {
-      throw new Error(
-        extractApiErrorMessage(
-          error,
-          "failed to mark all donation notifications as read",
-        ),
-      );
-    }
+  async markAllAsRead(userID?: string): Promise<void> {
+    return notificationsApi.markAllAsRead(userID);
   },
 };
